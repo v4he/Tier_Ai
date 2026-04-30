@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+
+@theme {
+  /* Заменяем стандартный шрифт (sans) на Inter */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  /* Добавляем свой кастомный шрифт "brand" */
+  --font-brand: "Huninn", sans-serif;
+}
+
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+
+@layer base {
+  /* Ширина всего скроллбара */
+  ::-webkit-scrollbar {
+    width: 5px;  /* Ширина для вертикального */
+    height: 5px; /* Высота для горизонтального */
+  }
+
+  /* Фон дорожки, по которой едет ползунок */
+  ::-webkit-scrollbar-track {
+    background: #f1f1f100; /* Светло-серый (беловатый) фон */
+  }
+
+  /* Сам ползунок (барабан) */
+  ::-webkit-scrollbar-thumb {
+    background: #bbbbb7; 
+    border-radius: 16px;  
+    /* border: 2px solid #ffffff;  */
+  }
+
+  /* Цвет при наведении */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #b1b1b1; /* Чуть темнее при наведении */
+  }
+}
+
+/* Скрываем скроллбар для Chrome, Safari и Opera */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Скрываем для IE, Edge и Firefox */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE и Edge */
+}
