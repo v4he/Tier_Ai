@@ -1,5 +1,7 @@
 const express = require('express');
 const pool = require('./db');
+const { parseProductWithGroq } = require('./services/groqService');
+const { fetchHtml } = require('./services/fetchHtml');
 require('dotenv').config();
 
 const app = express();
@@ -14,7 +16,18 @@ app.get('/test-users', async (req, res) => {
   }
 });
 
+app.post('/api/parse', async (req, res) => {
+  const url = req.body.url;
+  console.log('Downloading:', url);
+
+  const html = await fetchHtml(url);
+  const result = await parseProductWithGroq(html);
+  console.log('GROQ result:', result);
+
+  res.json({ result });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`server: ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
