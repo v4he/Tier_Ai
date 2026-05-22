@@ -3,6 +3,8 @@ import React from "react";
 import TierCard from "../ui/TierCard";
 import Header from "./Header";
 import ChatPanel from "./ChatPanel";
+import { useEffect } from "react";
+import { useState } from "react";
 
 function TierContent() {
   return (

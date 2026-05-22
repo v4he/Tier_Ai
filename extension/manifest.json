@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Tier Ai",
+  "version": "1.0",
+  "description": "",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["http://localhost:5000/*", "https://www.leboncoin.fr/*", "https://httpbin.org/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

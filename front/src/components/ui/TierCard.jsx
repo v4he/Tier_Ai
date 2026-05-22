@@ -20,8 +20,6 @@ function TierCard() {
         shadow-sm"
       ></div>
 
-
-
       <div>rteojtoierj</div>
     </div>
   );
