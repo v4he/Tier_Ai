@@ -3,8 +3,8 @@ import TextareaAutosize from "react-textarea-autosize";
 
 function ChatPanel() {
   return (
-    <div className="relative w-100 h-full border border-white/10 bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
-      <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center border-b border-white/10 shadow-xl z-10">
+    <div className="relative w-100 h-full  bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
+      <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center  shadow-xl z-10">
         AI CHAT
       </div>
 
@@ -92,7 +92,7 @@ function ChatPanel() {
         </div>
       </div>
 
-      <div className="relative bottom-0 flex  gap-2 left-0 border border-white/10  rounded-tl-2xl rounded-tr-2xl w-full p-4 bg-gradient-to-t  to-transparent">
+      <div className="relative bottom-0 flex  gap-2 left-0   rounded-tl-2xl rounded-tr-2xl w-full p-4 bg-gradient-to-t  to-transparent">
         <div className="flex items-end gap-4 w-full border border-black/5 bg-white p-2  rounded-2xl">
           <TextareaAutosize
             maxRows={10}
