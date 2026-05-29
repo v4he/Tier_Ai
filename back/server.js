@@ -2,21 +2,19 @@ const express = require("express");
 const pool = require("./db");
 const { parseProductWithGroq } = require("./services/groqService");
 require("dotenv").config();
-const cors = require('cors');
-const { compareWithGemini } = require("./services/geminiService")
-
+const cors = require("cors");
+const { compareWithGemini } = require("./services/geminiService");
 
 const app = express();
 
-app.use(cors({
-  origin: ['http://localhost:5173', 'https://твой-сайт.com']
-}));
-
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://твой-сайт.com"],
+  }),
+);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-
-
 
 app.get("/test-users", async (req, res) => {
   try {
@@ -57,7 +55,6 @@ app.post("/api/parse", async (req, res) => {
         sourceSite,
       ],
     );
-    
 
     const finalResult = {
       ...groqData,
@@ -73,41 +70,68 @@ app.post("/api/parse", async (req, res) => {
   }
 });
 
-app.get('/api/listings', async (req, res) => {
+app.get("/api/listings", async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM listings ORDER BY id DESC');
-    res.json(result.rows)
+    const result = await pool.query("SELECT * FROM listings ORDER BY id DESC");
+    res.json(result.rows);
   } catch (err) {
-    res.status(500).json({error: err.message});
+    res.status(500).json({ error: err.message });
   }
-  
-})
+});
 
-
-
-
-
-
-app.post('/api/compareData', async(req, res) => {
+app.post("/api/compareData", async (req, res) => {
   try {
-    const result = await pool.query(`SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1`, [req.body.tierListId])
-    
+    if (req.body.userMessage !== "") {
+      
+       const userResult = await pool.query(
+        "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
+        [req.body.tierListId, "user", req.body.userMessage],
+      );
+
+      const result = await pool.query(
+        `SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1`,
+        [req.body.tierListId],
+      );
+
+     
+
+      console.log(result.rows);
+      const geminiVerdict = await compareWithGemini({
+        compareList: result.rows,
+        frontMessage: req.body.userMessage,
+      });
+      console.log(geminiVerdict.ai_verdict)
+
+      const geminiResult = await pool.query(
+        "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
+        [req.body.tierListId,"assistant", geminiVerdict.ai_verdict],
+      );
+
+      console.log(geminiVerdict);
+      res.json({ gemini: geminiVerdict.ai_verdict });
+    }
+    else{
+      res.json({error: 'user message error'})
+    }
+  } catch (error) {
+    res.json({ gemini: 'oshibka' });
+    console.log(error); 
+  }
+});
+
+
+
+app.get('/api/chatMessages', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM chat_messages')
+    res.json(result.rows)
     console.log(result.rows)
-    const geminiVerdict = await compareWithGemini({compareList: result.rows, frontMessage: req.body.userMessage});
-    res.json({gemini: geminiVerdict.results});
   } catch (error) {
     console.log(error)
   }
 })
 
-
-
-
-
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
