@@ -3,6 +3,7 @@ const pool = require("./db");
 const { parseProductWithGroq } = require("./services/groqService");
 require("dotenv").config();
 const cors = require('cors');
+const { compareWithGemini } = require("./services/geminiService")
 
 
 const app = express();
@@ -76,11 +77,33 @@ app.get('/api/listings', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM listings ORDER BY id DESC');
     res.json(result.rows)
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({error: err.message});
   }
   
 })
+
+
+
+
+
+
+app.post('/api/compareData', async(req, res) => {
+  try {
+    const result = await pool.query(`SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1`, [req.body.tierListId])
+    
+    console.log(result.rows)
+    const geminiVerdict = await compareWithGemini({compareList: result.rows, frontMessage: req.body.userMessage});
+    res.json({gemini: geminiVerdict.results});
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+
+
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

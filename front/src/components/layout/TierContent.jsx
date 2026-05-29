@@ -9,12 +9,13 @@ function TierContent() {
   const [listings, setListings] = useState([]);
   const [activeCardId, setActiveCardId] = useState(null);
 
+  const TIER_LIST_ID = 1;
+
   useEffect(() => {
-    fetch("http://localhost:5000/api/listings")
-      .then((res) => res.json())
-      .then((data) => {
+    fetch("http://localhost:5000/api/listings").then((res) => res.json()).then((data) => {
         if (Array.isArray(data)) {
           setListings(data);
+          console.log(data)
         } else {
           console.error(data);
           setListings([]);
@@ -66,7 +67,7 @@ function TierContent() {
           </div>
         </ReactLenis>
 
-        <ChatPanel />
+        <ChatPanel id={TIER_LIST_ID}/>
       </div>
     </div>
   );
