@@ -7,15 +7,9 @@ function ChatPanel({ id }) {
   const [value, setValue] = useState("");
   const [geminiReponse, setGeminiReponse] = useState();
   const [chatData, setChatData] = useState([]);
+  const [mode, setMode] = useState("tier");
 
   const handleMessage = async () => {
-
-
-    
-
-
-    
-
     const valueCopy = value;
     setValue("");
 
@@ -26,13 +20,12 @@ function ChatPanel({ id }) {
       created_at: new Date().toISOString(),
     };
     
-    setChatData(prev => [...prev, userMsg])
-    
+    setChatData(prev => [...prev, userMsg]);
 
     await fetch("http://localhost:5000/api/compareData", {
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      body: JSON.stringify({ userMessage: valueCopy, tierListId: id }),
+      body: JSON.stringify({ userMessage: valueCopy, tierListId: id, mode: mode }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -41,9 +34,10 @@ function ChatPanel({ id }) {
           role: "assistant",
           content: data.gemini,
           created_at: new Date().toISOString(),
-        }
+        };
         setGeminiReponse(geminiMsg);
-        setChatData(prev => [...prev, geminiMsg])
+        console.log(data.gemini)
+        setChatData(prev => [...prev, geminiMsg]);
       });
   };
 
@@ -54,19 +48,43 @@ function ChatPanel({ id }) {
       .catch((error) => console.log(error));
   }, []);
 
-const chatContainerRef = useRef(null);
-
+  const chatContainerRef = useRef(null);
 
   useEffect(() => {
-  if (chatContainerRef.current) {
-    chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-  }
-}, [chatData]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatData]);
 
   return (
     <div className="relative w-100 h-full bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
-      <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center shadow-xl z-10">
-        AI CHAT
+     
+      <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center justify-between shadow-xl z-10">
+        <span>AI CHAT</span>
+        
+
+        <div className="flex bg-[#2d2d2d] p-1 rounded-xl text-xs font-medium">
+          <button
+            onClick={() => setMode("tier")}
+            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
+              mode === "tier" 
+                ? "bg-[#ba6f6f] text-white shadow" 
+                : "text-gray-400 hover:text-white cursor-pointer"
+            }`}
+          >
+            Tier List
+          </button>
+          <button
+            onClick={() => setMode("chat")}
+            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
+              mode === "chat" 
+                ? "bg-[#ffffff] text-black shadow" 
+                : "text-gray-400 hover:text-white cursor-pointer"
+            }`}
+          >
+            Chat
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col no-scrollbar transition-all duration-300" ref={chatContainerRef}>
@@ -103,7 +121,8 @@ const chatContainerRef = useRef(null);
           <TextareaAutosize
             maxRows={10}
             className="flex-1 bg-transparent border-none outline-none resize-none p-1 text-sm text-gray-700"
-            placeholder="Make Tier List..."
+    
+            placeholder={mode === "tier" ? "Make Tier List..." : "Type a message to AI..."}
             value={value}
             onChange={(e) => setValue(e.target.value)}
           />

@@ -3,7 +3,7 @@ const pool = require("./db");
 const { parseProductWithGroq } = require("./services/groqService");
 require("dotenv").config();
 const cors = require("cors");
-const { compareWithGemini } = require("./services/geminiService");
+const { Gemini } = require("./services/geminiService");
 
 const app = express();
 
@@ -79,10 +79,21 @@ app.get("/api/listings", async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
 app.post("/api/compareData", async (req, res) => {
   try {
     if (req.body.userMessage !== "") {
       
+
+
+      console.log(req.body)
+
        const userResult = await pool.query(
         "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
         [req.body.tierListId, "user", req.body.userMessage],
@@ -93,22 +104,32 @@ app.post("/api/compareData", async (req, res) => {
         [req.body.tierListId],
       );
 
+      const chatHystoriResult = await pool.query('SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 40')
+
      
 
-      console.log(result.rows);
-      const geminiVerdict = await compareWithGemini({
+
+
+      const geminiVerdict = await Gemini({
         compareList: result.rows,
         frontMessage: req.body.userMessage,
-      });
-      console.log(geminiVerdict.ai_verdict)
+        chatHistoryText: chatHystoriResult.rows
+
+      }, req.body.mode);
+
+      console.log(geminiVerdict)
+
+      const aiMessageText = geminiVerdict?.ai_verdict || "AI reponse error";
+
+      console.log(aiMessageText)
 
       const geminiResult = await pool.query(
         "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
-        [req.body.tierListId,"assistant", geminiVerdict.ai_verdict],
+        [req.body.tierListId,"assistant", aiMessageText],
       );
 
-      console.log(geminiVerdict);
-      res.json({ gemini: geminiVerdict.ai_verdict });
+
+      res.json({ gemini: geminiVerdict });
     }
     else{
       res.json({error: 'user message error'})
@@ -121,11 +142,16 @@ app.post("/api/compareData", async (req, res) => {
 
 
 
+
+
+
+
+
 app.get('/api/chatMessages', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM chat_messages')
     res.json(result.rows)
-    console.log(result.rows)
+
   } catch (error) {
     console.log(error)
   }
