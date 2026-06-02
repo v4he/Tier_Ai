@@ -104,7 +104,7 @@ app.post("/api/compareData", async (req, res) => {
         [req.body.tierListId],
       );
 
-      const chatHystoriResult = await pool.query('SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 40')
+      const chatHistoryResult = await pool.query('SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 40')
 
      
 
@@ -113,13 +113,13 @@ app.post("/api/compareData", async (req, res) => {
       const geminiVerdict = await Gemini({
         compareList: result.rows,
         frontMessage: req.body.userMessage,
-        chatHistoryText: chatHystoriResult.rows
+        chatHistoryText: chatHistoryResult.rows
 
-      }, req.body.mode);
+      });
 
-      console.log(geminiVerdict)
+      console.log(geminiVerdict.chat_reply)
 
-      const aiMessageText = geminiVerdict?.ai_verdict || "AI reponse error";
+      const aiMessageText = geminiVerdict?.chat_reply || "AI reponse error";
 
       console.log(aiMessageText)
 

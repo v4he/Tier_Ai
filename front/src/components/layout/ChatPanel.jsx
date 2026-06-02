@@ -25,14 +25,14 @@ function ChatPanel({ id }) {
     await fetch("http://localhost:5000/api/compareData", {
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      body: JSON.stringify({ userMessage: valueCopy, tierListId: id, mode: mode }),
+      body: JSON.stringify({ userMessage: valueCopy, tierListId: id}),
     })
       .then((res) => res.json())
       .then((data) => {
         const geminiMsg = {
           id: Date.now(),
           role: "assistant",
-          content: data.gemini,
+          content: data.gemini.chat_reply,
           created_at: new Date().toISOString(),
         };
         setGeminiReponse(geminiMsg);

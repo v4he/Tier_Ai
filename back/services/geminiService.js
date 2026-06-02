@@ -1,155 +1,93 @@
-
-const { GoogleGenAI, Type  } = require('@google/genai');
-
+const { GoogleGenAI, Type } = require("@google/genai");
 require("dotenv").config();
 
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  const jsonSchema = {
-    type: Type.OBJECT,
-    properties: {
-      results: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            id: { type: Type.INTEGER },
-            ai_verdict: { type: Type.STRING },
-            pros: { type: Type.ARRAY, items: { type: Type.STRING } },
-            cons: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["id", "ai_verdict", "pros", "cons"]
-        }
-      }
+const universalSchema = {
+  type: Type.OBJECT,
+  properties: {
+    mode: {
+      type: Type.STRING,
+      description:
+        "Режим ответа: 'tier' если пользователь просит сравнить/оценить/создать тир-лист, или 'chat' если это обычный вопрос или беседа.",
     },
-    required: ["results"]
-  };
+    chat_reply: {
+      type: Type.STRING,
+      description:
+        "Текстовый ответ или вводная вежливая фраза для пользователя (например, 'Вот ваш тир-лист:' или ответ на вопрос).",
+    },
+    results: {
+      type: Type.ARRAY,
+      description:
+        "Массив с анализом каждого товара. Заполняется только если mode === 'tier'. Если mode === 'chat', возвращается пустой массив.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.INTEGER },
+          ai_verdict: { type: Type.STRING },
+          pros: { type: Type.ARRAY, items: { type: Type.STRING } },
+          cons: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            grade: {
+              type: Type.STRING,
+              description: "Оценка товара: S, A, B или C",
+            },
+          },
+        },
+        required: ["id", "ai_verdict", "pros", "cons", grade],
+      },
+    },
+  },
+  required: ["mode", "chat_reply", "results"],
+};
 
+async function Gemini(compareData) {
+  const listingsText = compareData.compareList
+    .map(
+      (item) =>
+        `ID: ${item.id}, Title: ${item.title}, Price: ${item.price}€, Condition: ${item.condition_category}, Seller Rating: ${item.seller_rating}, Reviews: ${item.seller_reviews_count}, Description: ${item.clean_description || "No description"}`,
+    )
+    .join("\n");
 
+  const prompt = `Ты — интеллектуальный ассистент по анализу и сравнению товаров. Перед тобой список товаров и история диалога.
 
-
-async function tierGemini(compareData) {
-  const listingsText = compareData.compareList.map(item => 
-  `ID: ${item.id}, Title: ${item.title}, Price: ${item.price}€, Condition: ${item.condition_category}, Seller Rating: ${item.seller_rating}, Reviews: ${item.seller_reviews_count}, Description: ${item.clean_description || 'No description'}`
-).join('\n');
-  
-  const prompt = `Ты — эксперт по сравнению товаров.
-
-Пользователь задал вопрос: "${compareData.frontMessage}"
-
-Вот список товаров (каждый товар содержит id, название, цену, состояние, рейтинг продавца, количество отзывов и чистое описание):
-
+Вот список товаров для контекста:
 ${listingsText}
 
-Твоя задача:
-1. Если пользователь задал вопрос — ответь на него, используя этот список товаров.
-2. Если вопрос пустой или его нет — выбери лучший товар по соотношению цена/качество, учитывая состояние, рейтинг продавца и описание.
-3. Для КАЖДОГО товара из списка верни:
-   - ai_verdict: почему этот товар хорош (или плох) для запроса пользователя (1-2 предложения).
-   - pros: массив строк (3-5 пунктов) с преимуществами товара.
-   - cons: массив строк (3-5 пунктов) с недостатками товара.
+Вот история последних сообщений в чате (для понимания контекста):
+${compareData.chatHistoryText || "История пуста"}
 
-Верни ТОЛЬКО JSON без лишнего текста, пояснений, markdown или комментариев.
+Текущее сообщение пользователя: "${compareData.frontMessage}"
 
-Формат ответа:
-{
-  "results": [
-    {
-      "id": <число>,
-      "ai_verdict": "строка",
-      "pros": ["строка", "строка", ...],
-      "cons": ["строка", "строка", ...]
-    }
-  ]
-}
+Твоя задача — проанализировать сообщение пользователя и строго определить его намерение:
 
-Пример вывода (только для примера, не копируй в реальный ответ):
-{
-  "results": [
-    {
-      "id": 101,
-      "ai_verdict": "Лучший выбор: цена низкая, состояние отличное, подходит для игр.",
-      "pros": ["Цена ниже рынка", "16GB RAM", "SSD 512GB"],
-      "cons": ["Нет зарядки", "Царапина на крышке"]
-    },
-    {
-      "id": 102,
-      "ai_verdict": "Слишком дорогой для своего состояния, не рекомендую.",
-      "pros": ["Большой экран", "Гарантия 1 год"],
-      "cons": ["Высокая цена", "Маленький SSD", "Старый процессор"]
-    }
-  ]
-}`;
+КЕЙС 1: Если пользователь просит СРАВНИТЬ товары, ОЦЕНИТЬ их, ВЫБРАТЬ лучший или СОЗДАТЬ ТИР-ЛИСТ:
+1. Установи "mode": "tier"
+2. В поле "chat_reply" обязательно напиши короткую вводную фразу на языке пользователя (например: "Вот ваш тир-лист и подробное сравнение товаров:", "Я проанализировал доступные варианты, вот готовый тир-лист:" или подобное).
+3. В массив "results" для КАЖДОГО товара из предоставленного списка подготовь структурированный анализ (id, ai_verdict, pros, cons).
+
+КЕЙС 2: Если пользователь задает ОБЩИЙ ВОПРОС о товарах (например: "У какого ноута больше память?", "Почему первый такой дорогой?") или просто приветствует/общается:
+1. Установи "mode": "chat"
+2. Сформируй краткий, точный и вежливый ответ на вопрос в поле "chat_reply", опираясь на реальные характеристики товаров. Не придумывай того, чего нет в описании.
+3. Массив "results" сделай пустым [].
+
+Верни ТОЛЬКО JSON, строго соответствующий заданной схеме. Без markdown-разметки, без лишнего текста вокруг.`;
 
   const response = await gemini.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: prompt,
-  config: {
-    responseMimeType: "application/json",
-    responseSchema: jsonSchema 
-  }
-});
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: universalSchema,
+      temperature: 0.2,
+      maxOutputTokens: 1500,
+    },
+  });
 
   const rawText = response.text;
-  const parsed = JSON.parse(rawText);
-
-
-  return parsed;
+  console.log(rawText);
+  return JSON.parse(rawText);
 }
 
-
-
-
-async function chatGemini(compareData){
-  console.log(compareData)
-
-  const listingsText = compareData.compareList.map(item => 
-  `ID: ${item.id}, Title: ${item.title}, Price: ${item.price}€, Condition: ${item.condition_category}, Seller Rating: ${item.seller_rating}, Reviews: ${item.seller_reviews_count}, Description: ${item.clean_description || 'No description'}`
-).join('\n');
-
-
-
-  const prompt = `Ты — ассистент по товарам. У тебя есть список товаров и история диалога с пользователем.
-
-Вот список товаров (каждый товар содержит id, название, цену и описание):
-${listingsText}
-
-Вот последние сообщения в чате (пользователь → assistant):
-${compareData.chatHistoryText}
-
-Пользователь спрашивает: "${compareData.frontMessage}"
-
-Ответь на вопрос пользователя, используя информацию о товарах из списка и контекст диалога.
-- Если вопрос связан с конкретным товаром — ответь, опираясь на его данные.
-- Если вопрос общий — ответь, используя информацию из всех товаров.
-- Если нужной информации нет в списке товаров — честно скажи, что не знаешь.
-- Не выдумывай характеристики, которых нет в описании товаров.
-- Отвечай кратко, по делу, на том же языке, что и вопрос.`
-
-
-const response = await gemini.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: prompt,
-})
-
-
-
-
-  return response.text;
-}
-
-
-
-
-
-
-async function Gemini(compareData, mode) {
-  if(mode === 'tier'){
-    return await tierGemini(compareData)
-  }
-  else if(mode === 'chat'){
-     return await chatGemini(compareData)
-  }
-}
-
-module.exports = { Gemini }
+module.exports = { Gemini };
