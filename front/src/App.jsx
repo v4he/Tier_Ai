@@ -13,7 +13,7 @@ function App() {
         
         <Route path="/" element={<Layout />}>
           <Route index element={<MainContent />}/>
-          <Route path="tier-list" element={<TierContent />} />
+          <Route path="tier-list/:id" element={<TierContent />} />
         </Route>
       </Routes>
     

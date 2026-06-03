@@ -4,15 +4,21 @@ import { ReactLenis } from "lenis/react";
 import TierCard from "../ui/TierCard";
 import Header from "./Header";
 import ChatPanel from "./ChatPanel";
+import { useParams } from "react-router";
 
 function TierContent() {
+
+  const {id} = useParams()
+  
+
   const [listings, setListings] = useState([]);
   const [activeCardId, setActiveCardId] = useState(null);
 
-  const TIER_LIST_ID = 1;
+  const tierListId = id;
+  console.log(id)
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/listings").then((res) => res.json()).then((data) => {
+    fetch(`http://localhost:5000/api/listings/${id}`).then((res) => res.json()).then((data) => {
         if (Array.isArray(data)) {
           setListings(data);
           console.log(data)
@@ -67,7 +73,7 @@ function TierContent() {
           </div>
         </ReactLenis>
 
-        <ChatPanel id={TIER_LIST_ID}/>
+        <ChatPanel id={tierListId}/>
       </div>
     </div>
   );

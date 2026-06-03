@@ -9,7 +9,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://твой-сайт.com"],
+    origin: ["http://localhost:5173"],
   }),
 );
 
@@ -27,8 +27,6 @@ app.get("/test-users", async (req, res) => {
 
 app.post("/api/parse", async (req, res) => {
   const { url, text, imageUrl } = req.body;
-  console.log("Received URL:", url);
-  console.log("Received Image:", imageUrl);
 
   if (!text) {
     return res.status(400).json({ error: "No text provided" });
@@ -36,7 +34,7 @@ app.post("/api/parse", async (req, res) => {
 
   try {
     const groqData = await parseProductWithGroq(text);
-    console.log(groqData);
+ 
     const urlObj = new URL(url);
     const sourceSite = urlObj.hostname;
 
@@ -70,10 +68,16 @@ app.post("/api/parse", async (req, res) => {
   }
 });
 
-app.get("/api/listings", async (req, res) => {
+app.get("/api/listings/:id", async (req, res) => {
+
   try {
-    const result = await pool.query("SELECT * FROM listings ORDER BY id DESC");
+    console.log(req.params.id)
+    const result = await pool.query(
+        `SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1`,
+        [req.params.id],
+      );
     res.json(result.rows);
+    console.log(result.rows)
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -81,6 +85,15 @@ app.get("/api/listings", async (req, res) => {
 
 
 
+
+app.get("/api/tierFolders", async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM tier_lists ORDER BY created_at')
+    res.json(result.rows)
+  } catch (error) {
+    console.log(error)
+  }
+})
 
 
 
@@ -92,7 +105,7 @@ app.post("/api/compareData", async (req, res) => {
       
 
 
-      console.log(req.body)
+   
 
        const userResult = await pool.query(
         "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
@@ -104,7 +117,7 @@ app.post("/api/compareData", async (req, res) => {
         [req.body.tierListId],
       );
 
-      const chatHistoryResult = await pool.query('SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 40')
+      const chatHistoryResult = await pool.query('SELECT * FROM chat_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 40',[req.body.tierListId])
 
      
 
@@ -117,11 +130,11 @@ app.post("/api/compareData", async (req, res) => {
 
       });
 
-      console.log(geminiVerdict.chat_reply)
+
 
       const aiMessageText = geminiVerdict?.chat_reply || "AI reponse error";
 
-      console.log(aiMessageText)
+
 
       const geminiResult = await pool.query(
         "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
@@ -147,9 +160,9 @@ app.post("/api/compareData", async (req, res) => {
 
 
 
-app.get('/api/chatMessages', async (req, res) => {
+app.get('/api/chatMessages/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM chat_messages')
+    const result = await pool.query('SELECT * FROM chat_messages WHERE session_id = $1',[req.params.id])
     res.json(result.rows)
 
   } catch (error) {

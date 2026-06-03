@@ -9,6 +9,8 @@ function ChatPanel({ id }) {
   const [chatData, setChatData] = useState([]);
   const [mode, setMode] = useState("tier");
 
+  console.log(id)
+
   const handleMessage = async () => {
     const valueCopy = value;
     setValue("");
@@ -42,7 +44,7 @@ function ChatPanel({ id }) {
   };
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/chatMessages")
+    fetch(`http://localhost:5000/api/chatMessages/${id}`)
       .then((res) => res.json())
       .then((data) => setChatData(data))
       .catch((error) => console.log(error));

@@ -29,13 +29,13 @@ const universalSchema = {
           cons: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            grade: {
+          },
+          grade: {
               type: Type.STRING,
               description: "Оценка товара: S, A, B или C",
             },
-          },
         },
-        required: ["id", "ai_verdict", "pros", "cons", grade],
+        required: ["id", "ai_verdict", "pros", "cons", "grade"],
       },
     },
   },
@@ -86,7 +86,7 @@ ${compareData.chatHistoryText || "История пуста"}
   });
 
   const rawText = response.text;
-  console.log(rawText);
+
   return JSON.parse(rawText);
 }
 
