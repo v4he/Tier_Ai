@@ -1,15 +1,22 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Search, ArrowLeft } from "lucide-react";
 import DashboardCard from "../ui/DashboardCard";
 import Header from "./Header";
 import { useState } from "react";
 import { useEffect } from "react";
-import AddDashboardCard from "../ui/AddDashboardCard ";
+import AddCardButton from "../ui/AddCardButton";
+import CreateFolderCard from "../ui/CreateFolderCard";
 
 function MainContent() {
   const [tierFolder, setTierFolder] = useState([]);
   const [addFolder, setAddFolder] = useState(false)
-  const [cardValue, setCardValue] = useState("new folder")
+  const [cardName, setCardName] = useState("")
+
+console.log(cardName)
+
+  
+
+
 
   useEffect(() => {
     fetch("http://localhost:5000/api/tierFolders")
@@ -30,6 +37,7 @@ function MainContent() {
 const handleClick = () => {
   if(addFolder === false){
      setAddFolder(true)
+     
       
   }
   else if(addFolder === true){
@@ -55,7 +63,10 @@ const handleClick = () => {
 
           {
             addFolder ? tierFolder.map((elem) => (
-              <DashboardCard key={elem.id} cardValue={cardValue}  setCardValue={setCardValue} tierFolderData={"creating"}/>
+              <CreateFolderCard key={elem.id} cardName={cardName} setCardName={setCardName} tierFolderData={"creating"}
+              addFolder={addFolder}
+              setAddFolder={setAddFolder}
+              />
             )) : ""
           }
           
@@ -63,7 +74,7 @@ const handleClick = () => {
             
           
 
-          <AddDashboardCard onClick={handleClick}/>
+          <AddCardButton onClick={handleClick}/>
           
           
 

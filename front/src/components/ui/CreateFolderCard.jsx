@@ -1,12 +1,17 @@
-import React from "react";
-import { Folder, ArrowUpRight} from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { Folder, ArrowUpRight } from "lucide-react";
 import defaultNotebook from "../../assets/image/aaaa.png";
-import { Link } from 'react-router';
 
-function DashboardCard({ tierFolderData }) {
+function CreateFolderCard({ tierFolderData, cardName, setCardName }) {
   if (!tierFolderData) return null;
 
-  const {id, title, cover_image, created_at } = tierFolderData;
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current.focus();
+  }, []);
+
+  const { title, cover_image, created_at } = tierFolderData;
 
   const formattedDate = created_at
     ? new Date(created_at).toLocaleDateString("ru-RU", {
@@ -17,7 +22,6 @@ function DashboardCard({ tierFolderData }) {
     : "";
 
   return (
-    <Link to={`tier-list/${id}`}>
     <div
       className="
         group relative aspect-square w-full bg-white 
@@ -59,9 +63,19 @@ function DashboardCard({ tierFolderData }) {
       </div>
 
       <div className="p-5 bg-white border-t border-black/[0.02]">
-        <h3 className="text-gray-800 font-semibold text-base line-clamp-1 tracking-tight group-hover:text-black transition-colors">
-          {title || ""}
-        </h3>
+        <input
+          type="text"
+          ref={inputRef}
+          name=""
+          value={cardName}
+          onBlur={() => {
+            console.log(console.log("poteryal fokus"));
+          }}
+          onChange={(e) => {
+            setCardName(e.target.value);
+          }}
+          id=""
+        />
 
         <div className="flex items-center gap-1.5 mt-1 text-[11px] font-medium uppercase tracking-wider text-gray-400">
           <span className="text-purple-600/80 font-bold">Tier List</span>
@@ -74,8 +88,7 @@ function DashboardCard({ tierFolderData }) {
         </div>
       </div>
     </div>
-    </Link>
   );
 }
 
-export default DashboardCard;
+export default CreateFolderCard;

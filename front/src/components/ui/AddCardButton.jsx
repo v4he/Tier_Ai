@@ -1,7 +1,7 @@
 import React from 'react'
 import { DiamondPlus } from 'lucide-react'
 
-function AddDashboardCard ({onClick}) {
+function AddCardButton ({onClick}) {
   return (
     
     <div onClick={onClick} className='aspect-square w-full flex justify-center items-center bg-white
@@ -17,4 +17,4 @@ function AddDashboardCard ({onClick}) {
   )
 }
 
-export default AddDashboardCard 
+export default AddCardButton
