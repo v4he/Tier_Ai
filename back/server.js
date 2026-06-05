@@ -93,24 +93,29 @@ app.get("/api/tierFolders", async (req, res) => {
   }
 });
 
-
-
-
 app.post("/api/tierFolderInsert", async (req, res) => {
   try {
-    const result = await pool.query('INSERT INTO tier_lists (title, user_id) VALUES ($1, $2)', [req.body.title, req.body.userId])
-    console.log(req.body)
-    res.json({result: result})
+    const result = await pool.query(
+      "INSERT INTO tier_lists (title, user_id) VALUES ($1, $2) RETURNING id",
+      [req.body.title, req.body.userId],
+    );
+
+    res.json({ result: result.rows[0].id });
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 });
 
+app.post("/api/tierFolderDelete", async (req, res) => {
+  try {
+    const result = await pool.query("DELETE FROM tier_lists WHERE id = $1 RETURNING id", [
+      req.body.cardId]);
 
-
-
-
-
+    res.json({result: result.rows[0].id})
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 app.post("/api/compareData", async (req, res) => {
   try {
@@ -154,14 +159,16 @@ app.post("/api/compareData", async (req, res) => {
 });
 
 app.get("/api/chatMessages/:id", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT * FROM chat_messages WHERE session_id = $1",
-      [req.params.id],
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.log(error);
+  if (req.body.cardId !== "") {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM chat_messages WHERE session_id = $1",
+        [req.params.id],
+      );
+      res.json(result.rows);
+    } catch (error) {
+      console.log(error);
+    }
   }
 });
 

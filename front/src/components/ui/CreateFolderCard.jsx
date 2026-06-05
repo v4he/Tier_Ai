@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Folder, ArrowUpRight } from "lucide-react";
 import defaultNotebook from "../../assets/image/aaaa.png";
 
@@ -18,7 +18,7 @@ function CreateFolderCard({
     inputRef.current.focus();
   }, []);
 
-  const userId = 1
+  const userId = 1;
 
   const { title, cover_image, created_at } = tierFolderData;
 
@@ -30,16 +30,30 @@ function CreateFolderCard({
       })
     : "";
 
+  const [tierId, setTierId] = useState();
 
-    const tierFolderFetch = async () => {
-      await fetch('http://localhost:5000/api/tierFolderInsert',{
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-        body: JSON.stringify({title: cardName, userId: userId})
-      })
-      .then(res => res.json())
-      .then(data => console.log(data))
-    }
+  const tierFolderFetch = async () => {
+    const response = await fetch("http://localhost:5000/api/tierFolderInsert", {
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+      body: JSON.stringify({ title: cardName, userId: userId }),
+    });
+    const data = await response.json();
+    setTierId(data.result);
+
+    const cardMsg = {
+      cover_generated: false,
+      cover_image: null,
+      cover_image_ai: null,
+      cover_prompt: null,
+      created_at: new Date().toISOString(),
+      id: data.result,
+      title: cardName,
+      user_id: 1,
+    };
+
+    setTierFolder((prev) => [...prev, cardMsg]);
+  };
 
   return (
     <div
@@ -69,59 +83,41 @@ function CreateFolderCard({
           <Folder className="w-4 h-4" />
         </div>
 
-        <div
-          className="
-            absolute top-4 right-4 p-2 rounded-xl bg-white text-black shadow-md
-            opacity-0 translate-x-2 -translate-y-1
-            group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0
-            hover:bg-black hover:text-white
-            transition-all duration-300 ease-out
-          "
-        >
-          <ArrowUpRight className="w-4 h-4" />
-        </div>
+        
       </div>
 
       <div className="p-5 bg-white border-t border-black/[0.02]">
         <input
-        className="outline-none w-full "
+          className="outline-none w-full "
           type="text"
           ref={inputRef}
           name=""
           value={cardName}
-          onBlur={() => {
+          onBlur={async () => {
             if (cardName === "") {
               setAddFolder(false);
-              console.log(cardName)
-            } else if(cardName !== "") {
-              const cardMsg = {
-                cover_generated: false,
-                cover_image: null,
-                cover_image_ai: null,
-                cover_prompt: null,
-                created_at: new Date().toISOString(),
-                id: Date.now(),
-                title: cardName,
-                user_id: 1,
-              };
+            } else if (cardName !== "") {
+              await tierFolderFetch();
 
-              console.log(cardMsg)
-              setTierFolder(prev => [...prev, cardMsg])
-              tierFolderFetch()
-
-
-              setCardName("")
+              setCardName("");
               setAddFolder(false);
-
-
-             
-              
             }
           }}
           onChange={(e) => {
             setCardName(e.target.value);
           }}
+          onKeyDown={async (e) => {
+            if (e.key === "Enter") {
+              if (cardName === "") {
+                setAddFolder(false);
+              } else if (cardName !== "") {
+                await tierFolderFetch();
 
+                setCardName("");
+                setAddFolder(false);
+              }
+            }
+          }}
           id=""
         />
 

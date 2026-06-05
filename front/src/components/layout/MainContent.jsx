@@ -30,7 +30,7 @@ function MainContent() {
     setAddFolder(true);
   };
 
-  console.log(addFolder);
+
 
   return (
     <div className="flex flex-col h-screen w-full">
@@ -39,7 +39,7 @@ function MainContent() {
       <div className="flex-1 overflow-hidden">
         <div className="grid grid-cols-4 gap-6 overflow-y-auto  w-full h-full bg-amber-50 p-6 rounded-tl-[32px] content-start">
           {tierFolder.map((elem, index) => (
-            <DashboardCard key={index} tierFolderData={elem} />
+            <DashboardCard key={index} tierFolder={tierFolder} tierFolderData={elem} setTierFolder={setTierFolder}/>
           ))}
 
           {addFolder ? (
