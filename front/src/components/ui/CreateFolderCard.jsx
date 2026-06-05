@@ -2,7 +2,14 @@ import React, { useEffect, useRef } from "react";
 import { Folder, ArrowUpRight } from "lucide-react";
 import defaultNotebook from "../../assets/image/aaaa.png";
 
-function CreateFolderCard({ tierFolderData, cardName, setCardName }) {
+function CreateFolderCard({
+  tierFolderData,
+  cardName,
+  setCardName,
+  setAddFolder,
+  addfolder,
+  setTierFolder,
+}) {
   if (!tierFolderData) return null;
 
   const inputRef = useRef(null);
@@ -10,6 +17,8 @@ function CreateFolderCard({ tierFolderData, cardName, setCardName }) {
   useEffect(() => {
     inputRef.current.focus();
   }, []);
+
+  const userId = 1
 
   const { title, cover_image, created_at } = tierFolderData;
 
@@ -20,6 +29,17 @@ function CreateFolderCard({ tierFolderData, cardName, setCardName }) {
         year: "numeric",
       })
     : "";
+
+
+    const tierFolderFetch = async () => {
+      await fetch('http://localhost:5000/api/tierFolderInsert',{
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        body: JSON.stringify({title: cardName, userId: userId})
+      })
+      .then(res => res.json())
+      .then(data => console.log(data))
+    }
 
   return (
     <div
@@ -64,16 +84,44 @@ function CreateFolderCard({ tierFolderData, cardName, setCardName }) {
 
       <div className="p-5 bg-white border-t border-black/[0.02]">
         <input
+        className="outline-none w-full "
           type="text"
           ref={inputRef}
           name=""
           value={cardName}
           onBlur={() => {
-            console.log(console.log("poteryal fokus"));
+            if (cardName === "") {
+              setAddFolder(false);
+              console.log(cardName)
+            } else if(cardName !== "") {
+              const cardMsg = {
+                cover_generated: false,
+                cover_image: null,
+                cover_image_ai: null,
+                cover_prompt: null,
+                created_at: new Date().toISOString(),
+                id: Date.now(),
+                title: cardName,
+                user_id: 1,
+              };
+
+              console.log(cardMsg)
+              setTierFolder(prev => [...prev, cardMsg])
+              tierFolderFetch()
+
+
+              setCardName("")
+              setAddFolder(false);
+
+
+             
+              
+            }
           }}
           onChange={(e) => {
             setCardName(e.target.value);
           }}
+
           id=""
         />
 

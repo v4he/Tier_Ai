@@ -1,5 +1,5 @@
 import React from "react";
-import { Folder, ArrowUpRight} from "lucide-react";
+import { Folder, Trash} from "lucide-react";
 import defaultNotebook from "../../assets/image/aaaa.png";
 import { Link } from 'react-router';
 
@@ -54,7 +54,7 @@ function DashboardCard({ tierFolderData }) {
             transition-all duration-300 ease-out
           "
         >
-          <ArrowUpRight className="w-4 h-4" />
+          <Trash className="w-4 h-4" />
         </div>
       </div>
 

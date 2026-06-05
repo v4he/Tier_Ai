@@ -34,7 +34,7 @@ app.post("/api/parse", async (req, res) => {
 
   try {
     const groqData = await parseProductWithGroq(text);
- 
+
     const urlObj = new URL(url);
     const sourceSite = urlObj.hostname;
 
@@ -69,31 +69,44 @@ app.post("/api/parse", async (req, res) => {
 });
 
 app.get("/api/listings/:id", async (req, res) => {
-
   try {
-    console.log(req.params.id)
+    console.log(req.params.id);
     const result = await pool.query(
-        `SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1`,
-        [req.params.id],
-      );
+      `SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1`,
+      [req.params.id],
+    );
     res.json(result.rows);
-    console.log(result.rows)
+    console.log(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/tierFolders", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM tier_lists ORDER BY created_at",
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.log(error);
   }
 });
 
 
 
 
-app.get("/api/tierFolders", async (req, res) => {
+app.post("/api/tierFolderInsert", async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tier_lists ORDER BY created_at')
-    res.json(result.rows)
+    const result = await pool.query('INSERT INTO tier_lists (title, user_id) VALUES ($1, $2)', [req.body.title, req.body.userId])
+    console.log(req.body)
+    res.json({result: result})
   } catch (error) {
     console.log(error)
   }
-})
+});
+
+
 
 
 
@@ -102,12 +115,7 @@ app.get("/api/tierFolders", async (req, res) => {
 app.post("/api/compareData", async (req, res) => {
   try {
     if (req.body.userMessage !== "") {
-      
-
-
-   
-
-       const userResult = await pool.query(
+      const userResult = await pool.query(
         "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
         [req.body.tierListId, "user", req.body.userMessage],
       );
@@ -117,58 +125,45 @@ app.post("/api/compareData", async (req, res) => {
         [req.body.tierListId],
       );
 
-      const chatHistoryResult = await pool.query('SELECT * FROM chat_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 40',[req.body.tierListId])
-
-     
-
-
+      const chatHistoryResult = await pool.query(
+        "SELECT * FROM chat_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 40",
+        [req.body.tierListId],
+      );
 
       const geminiVerdict = await Gemini({
         compareList: result.rows,
         frontMessage: req.body.userMessage,
-        chatHistoryText: chatHistoryResult.rows
-
+        chatHistoryText: chatHistoryResult.rows,
       });
-
-
 
       const aiMessageText = geminiVerdict?.chat_reply || "AI reponse error";
 
-
-
       const geminiResult = await pool.query(
         "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
-        [req.body.tierListId,"assistant", aiMessageText],
+        [req.body.tierListId, "assistant", aiMessageText],
       );
 
-
       res.json({ gemini: geminiVerdict });
-    }
-    else{
-      res.json({error: 'user message error'})
+    } else {
+      res.json({ error: "user message error" });
     }
   } catch (error) {
-    res.json({ gemini: 'oshibka' });
-    console.log(error); 
+    res.json({ gemini: "oshibka" });
+    console.log(error);
   }
 });
 
-
-
-
-
-
-
-
-app.get('/api/chatMessages/:id', async (req, res) => {
+app.get("/api/chatMessages/:id", async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM chat_messages WHERE session_id = $1',[req.params.id])
-    res.json(result.rows)
-
+    const result = await pool.query(
+      "SELECT * FROM chat_messages WHERE session_id = $1",
+      [req.params.id],
+    );
+    res.json(result.rows);
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-})
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

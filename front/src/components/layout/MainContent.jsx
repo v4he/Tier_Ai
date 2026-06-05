@@ -9,14 +9,8 @@ import CreateFolderCard from "../ui/CreateFolderCard";
 
 function MainContent() {
   const [tierFolder, setTierFolder] = useState([]);
-  const [addFolder, setAddFolder] = useState(false)
-  const [cardName, setCardName] = useState("")
-
-console.log(cardName)
-
-  
-
-
+  const [addFolder, setAddFolder] = useState(false);
+  const [cardName, setCardName] = useState("");
 
   useEffect(() => {
     fetch("http://localhost:5000/api/tierFolders")
@@ -32,19 +26,11 @@ console.log(cardName)
       .catch((error) => console.log(error));
   }, []);
 
+  const handleClick = () => {
+    setAddFolder(true);
+  };
 
-
-const handleClick = () => {
-  if(addFolder === false){
-     setAddFolder(true)
-     
-      
-  }
-  else if(addFolder === true){
-    setAddFolder(false)
-  
-  }
-}
+  console.log(addFolder);
 
   return (
     <div className="flex flex-col h-screen w-full">
@@ -52,33 +38,24 @@ const handleClick = () => {
 
       <div className="flex-1 overflow-hidden">
         <div className="grid grid-cols-4 gap-6 overflow-y-auto  w-full h-full bg-amber-50 p-6 rounded-tl-[32px] content-start">
+          {tierFolder.map((elem, index) => (
+            <DashboardCard key={index} tierFolderData={elem} />
+          ))}
 
-          {
-            tierFolder.map((elem) => (
-              <DashboardCard key={elem.id} tierFolderData={elem}/>
-            ))
-
-             
-          }
-
-          {
-            addFolder ? tierFolder.map((elem) => (
-              <CreateFolderCard key={elem.id} cardName={cardName} setCardName={setCardName} tierFolderData={"creating"}
+          {addFolder ? (
+            <CreateFolderCard
+              cardName={cardName}
+              setCardName={setCardName}
+              tierFolderData={"creating"}
               addFolder={addFolder}
               setAddFolder={setAddFolder}
-              />
-            )) : ""
-          }
-          
-           
-            
-          
+              setTierFolder={setTierFolder}
+            />
+          ) : (
+            ""
+          )}
 
-          <AddCardButton onClick={handleClick}/>
-          
-          
-
-
+          <AddCardButton onClick={handleClick} />
         </div>
       </div>
     </div>
