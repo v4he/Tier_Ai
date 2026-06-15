@@ -2,13 +2,27 @@
   "manifest_version": 3,
   "name": "Tier Ai",
   "version": "1.0",
-  "description": "",
+  "description": "Скрапер товаров для Тир-листов",
   "permissions": ["activeTab", "storage", "scripting"],
-  "host_permissions": ["http://localhost:5000/*", "https://www.leboncoin.fr/*", "https://httpbin.org/*"],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://*.leboncoin.fr/*",
+    "https://httpbin.org/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "tierFolders.html",
+        "parseList.html",
+        "scanPreview.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

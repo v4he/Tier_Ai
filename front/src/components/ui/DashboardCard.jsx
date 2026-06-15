@@ -1,6 +1,6 @@
 import React from "react";
 import { Folder, Trash } from "lucide-react";
-import defaultNotebook from "../../assets/image/aaaa.png";
+import defaultNotebook from "../../assets/image/bbbb.png";
 import { Link } from 'react-router';
 
 function DashboardCard({ tierFolderData, tierFolder, setTierFolder }) {

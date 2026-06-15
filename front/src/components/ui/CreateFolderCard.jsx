@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Folder, ArrowUpRight } from "lucide-react";
-import defaultNotebook from "../../assets/image/aaaa.png";
+import defaultNotebook from "../../assets/image/bbbb.png";
 
 function CreateFolderCard({
   tierFolderData,

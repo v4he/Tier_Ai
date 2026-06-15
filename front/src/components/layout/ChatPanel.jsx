@@ -3,31 +3,33 @@ import { useRef } from "react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 
-function ChatPanel({ id }) {
+function ChatPanel({ id, geminiResults, setGeminiResults }) {
   const [value, setValue] = useState("");
   const [geminiReponse, setGeminiReponse] = useState();
   const [chatData, setChatData] = useState([]);
   const [mode, setMode] = useState("tier");
 
-  console.log(id)
+  console.log(id);
 
   const handleMessage = async () => {
     const valueCopy = value;
     setValue("");
 
-    const userMsg = {
-      id: Date.now(),
-      role: "user",
-      content: value,
-      created_at: new Date().toISOString(),
-    };
-    
-    setChatData(prev => [...prev, userMsg]);
+    if (valueCopy !== "") {
+      const userMsg = {
+        id: Date.now(),
+        role: "user",
+        content: valueCopy,
+        created_at: new Date().toISOString(),
+      };
+
+      setChatData((prev) => [...prev, userMsg]);
+    }
 
     await fetch("http://localhost:5000/api/compareData", {
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      body: JSON.stringify({ userMessage: valueCopy, tierListId: id}),
+      body: JSON.stringify({ userMessage: valueCopy, tierListId: id }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -37,9 +39,20 @@ function ChatPanel({ id }) {
           content: data.gemini.chat_reply,
           created_at: new Date().toISOString(),
         };
-        setGeminiReponse(geminiMsg);
         console.log(data.gemini)
-        setChatData(prev => [...prev, geminiMsg]);
+        setGeminiReponse(geminiMsg);
+
+        setChatData((prev) => [...prev, geminiMsg]);
+
+        if (data.gemini.mode === "tier") {
+          console.log(data.gemini.mode)
+          if (data.gemini.results.length !== 0) {
+            setGeminiResults(data.gemini.results)
+            console.log(geminiResults)
+            console.log(data.gemini.results)
+          }
+        }
+
       });
   };
 
@@ -54,23 +67,22 @@ function ChatPanel({ id }) {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [chatData]);
 
   return (
     <div className="relative w-100 h-full bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
-     
       <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center justify-between shadow-xl z-10">
         <span>AI CHAT</span>
-        
 
         <div className="flex bg-[#2d2d2d] p-1 rounded-xl text-xs font-medium">
           <button
             onClick={() => setMode("tier")}
             className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
-              mode === "tier" 
-                ? "bg-[#ba6f6f] text-white shadow" 
+              mode === "tier"
+                ? "bg-[#ba6f6f] text-white shadow"
                 : "text-gray-400 hover:text-white cursor-pointer"
             }`}
           >
@@ -79,8 +91,8 @@ function ChatPanel({ id }) {
           <button
             onClick={() => setMode("chat")}
             className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
-              mode === "chat" 
-                ? "bg-[#ffffff] text-black shadow" 
+              mode === "chat"
+                ? "bg-[#ffffff] text-black shadow"
                 : "text-gray-400 hover:text-white cursor-pointer"
             }`}
           >
@@ -89,7 +101,10 @@ function ChatPanel({ id }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col no-scrollbar transition-all duration-300" ref={chatContainerRef}>
+      <div
+        className="flex-1 overflow-y-auto p-4 flex flex-col no-scrollbar transition-all duration-300"
+        ref={chatContainerRef}
+      >
         <div className="flex flex-col space-y-4">
           {chatData &&
             chatData.map((elem, index) => {
@@ -123,8 +138,9 @@ function ChatPanel({ id }) {
           <TextareaAutosize
             maxRows={10}
             className="flex-1 bg-transparent border-none outline-none resize-none p-1 text-sm text-gray-700"
-    
-            placeholder={mode === "tier" ? "Make Tier List..." : "Type a message to AI..."}
+            placeholder={
+              mode === "tier" ? "Make Tier List..." : "Type a message to AI..."
+            }
             value={value}
             onChange={(e) => setValue(e.target.value)}
           />

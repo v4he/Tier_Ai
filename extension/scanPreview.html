@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Scan Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, sans-serif; }
+    body { background: #f9fafb; padding: 20px; width: 100%; }
+    .product-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #eef2f6; }
+    .preview-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .preview-price { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 16px; }
+    .preview-price span { font-weight: 400; font-size: 12px; color: #64748b; }
+    .image-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .preview-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid #eef2f6; cursor: pointer; transition: 0.15s; }
+    .preview-img.selected { border-color: #0f172a; transform: scale(0.96); }
+    .action-buttons { display: flex; gap: 10px; }
+    .btn-confirm { flex: 1; background: #0f172a; color: white; border: none; border-radius: 30px; padding: 12px; font-weight: 600; cursor: pointer; }
+    .btn-cancel { flex: 1; background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 30px; padding: 12px; cursor: pointer; }
+    .status { margin-top: 12px; text-align: center; font-size: 12px; color: #64748b; }
+  </style>
+</head>
+<body>
+
+<div class="product-card">
+  <div class="preview-title" id="productTitle">Загрузка данных...</div>
+  <div class="preview-price" id="productPrice"></div>
+
+  <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #334155;">Выбери фото:</div>
+  <div id="imageGrid" class="image-grid"></div>
+
+  <div class="action-buttons">
+    <button id="confirmBtn" class="btn-confirm">add</button>
+    <button id="cancelBtn" class="btn-cancel">otemena</button>
+  </div>
+  <div id="statusMsg" class="status"></div>
+</div>
+
+<script>
+  let currentScrapedData = null;
+  let currentSelectedImageUrl = null;
+
+  const productTitleEl = document.getElementById('productTitle');
+  const productPriceEl = document.getElementById('productPrice');
+  const imageGridEl = document.getElementById('imageGrid');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const statusMsg = document.getElementById('statusMsg');
+
+  function extractBasicInfo(text) {
+    let title = "tovar iz skanera";
+    let price = "cena ne ukazana";
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    
+    if (lines.length > 0) title = lines[0].slice(0, 70);
+    
+    for (let line of lines) {
+      const match = line.match(/(\d[\d\s.,]*)\s*(€|\$|руб)/i);
+      if (match) {
+        price = match[0];
+        break;
+      }
+    }
+    return { title, price };
+  }
+
+  function loadPreview() {
+    chrome.storage.local.get(['scrapedData'], (res) => {
+      const data = res.scrapedData;
+      if (!data) {
+        statusMsg.textContent = "net dannix";
+        return;
+      }
+
+      currentScrapedData = data;
+      const { title, price } = extractBasicInfo(data.text);
+      productTitleEl.textContent = title;
+      productPriceEl.innerHTML = `${price} <span>(naydeno na stranice)</span>`;
+
+      const images = data.imageCandidates || [];
+      imageGridEl.innerHTML = "";
+
+      if (images.length === 0) {
+        imageGridEl.innerHTML = '<div style="grid-column: span 3; color: #94a3b8;">foto ne naydeni</div>';
+        return;
+      }
+
+      images.forEach((src, idx) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'preview-img';
+        
+        if (idx === 0) {
+          img.classList.add('selected');
+          currentSelectedImageUrl = src;
+        }
+
+        img.addEventListener('click', () => {
+          document.querySelectorAll('.preview-img').forEach(i => i.classList.remove('selected'));
+          img.classList.add('selected');
+          currentSelectedImageUrl = src;
+        });
+
+        imageGridEl.appendChild(img);
+      });
+    });
+  }
+
+  async function confirmAndSend() {
+    if (!currentScrapedData || !currentSelectedImageUrl) return;
+    
+    statusMsg.textContent = "otpravka na server";
+    
+    try {
+      const folderRes = await chrome.storage.local.get(['currentFolderId']);
+      const tierListId = folderRes.currentFolderId || 1;
+
+      const response = await fetch("http://localhost:5000/api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: currentScrapedData.url,
+          text: currentScrapedData.text,
+          imageUrl: currentSelectedImageUrl,
+          tierListId: Number(tierListId) 
+        })
+      });
+
+      const result = await response.json();
+      statusMsg.textContent = "uspeshno dobavleno";
+      setTimeout(() => window.close(), 800);
+    } catch (err) {
+      statusMsg.textContent = "oshibka seti " + err.message;
+    }
+  }
+
+  confirmBtn.addEventListener('click', confirmAndSend);
+  cancelBtn.addEventListener('click', () => window.close());
+  
+  loadPreview();
+</script>
+</body>
+</html>

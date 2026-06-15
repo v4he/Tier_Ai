@@ -1,42 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <style>
-    body { width: 320px; padding: 15px; font-family: sans-serif; box-sizing: border-box; }
-    button { width: 100%; padding: 12px; margin-top: 10px; cursor: pointer; border-radius: 6px; border: 1px solid #ccc; font-weight: bold; }
-    #parseBtn { background-color: #007bff; color: white; border: none; }
-    #confirmBtn { background-color: #28a745; color: white; border: none; margin-top: 15px; }
-    #status { margin-top: 10px; font-size: 13px; color: #555; text-align: center; }
-    
-    #previewBlock { display: none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
-    .picker-label { font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #333; }
-    .image-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 180px; overflow-y: auto; padding: 2px; }
-    
-    .picker-img { 
-      width: 100%; 
-      height: 80px; 
-      object-fit: cover; 
-      border: 2px solid #eee; 
-      border-radius: 4px; 
-      cursor: pointer; 
-      transition: all 0.2s ease;
-    }
-    .picker-img:hover { border-color: #bbb; }
-    .picker-img.selected { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.5); }
+    body { margin: 0; padding: 0; width: 350px; height: 550px; background: #f9fafb; }
+    iframe { width: 100%; height: 100%; border: none; }
   </style>
 </head>
 <body>
-  <h3>Tier AI Parser</h3>
-  <button id="parseBtn">Scan Page</button>
-  <div id="status"></div>
-
-  <div id="previewBlock">
-    <div class="picker-label">Select the best product image:</div>
-    <div id="imagePicker" class="image-grid"></div>
-    <button id="confirmBtn">Confirm and Send</button>
-  </div>
-
+  <iframe id="appFrame" src="about:blank"></iframe>
   <script src="popup.js"></script>
 </body>
 </html>

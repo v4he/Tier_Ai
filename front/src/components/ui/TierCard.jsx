@@ -1,7 +1,16 @@
 import React from "react";
 import { Star, ArrowUpRight, X } from "lucide-react";
 
-function TierCard({ data, isOpen, onToggle, onDelete }) {
+function TierCard({
+  data,
+  isOpen,
+  onToggle,
+  onDelete,
+  tierListId,
+  tierCardId,
+  listings,
+  setListings,
+}) {
   if (!data) return null;
 
   const formattedPrice = Number(data.price).toLocaleString("fr-FR", {
@@ -25,6 +34,33 @@ function TierCard({ data, isOpen, onToggle, onDelete }) {
     : ["Great value for money", "Premium build quality"];
 
   const cons = Array.isArray(data.cons) ? data.cons : ["Limited color options"];
+
+  listings.filter((element) => element !== 35);
+
+  const handleDeleteCard = async (e) => {
+    e.stopPropagation();
+    onDelete?.();
+    try {
+      const reponse = await fetch(`http://localhost:5000/api/deleteListing`, {
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        body: JSON.stringify({
+          tierCardId: tierCardId,
+          tierListId: tierListId,
+        }),
+      });
+      if (!reponse.ok) {
+        return;
+      }
+
+      const data = await reponse.json();
+      console.log(data)
+      
+      setListings(prev => prev.filter(elem => elem.id !== data));
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -109,14 +145,13 @@ function TierCard({ data, isOpen, onToggle, onDelete }) {
             "
           >
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete?.();
-              }}
+              onClick={handleDeleteCard}
               className="
+              cursor-pointer
                 p-1.5 rounded-lg
                 bg-black/[0.04]
-                hover:bg-black/[0.08]
+                hover:bg-red-500
+                hover:text-white
                 text-gray-500
                 transition-colors
               "

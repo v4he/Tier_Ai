@@ -37,7 +37,7 @@ function MainContent() {
       <Header />
 
       <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-4 gap-6 overflow-y-auto  w-full h-full bg-amber-50 p-6 rounded-tl-[32px] content-start">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto  w-full h-full  p-6 rounded-tl-[32px] content-start">
           {tierFolder.map((elem, index) => (
             <DashboardCard key={index} tierFolder={tierFolder} tierFolderData={elem} setTierFolder={setTierFolder}/>
           ))}

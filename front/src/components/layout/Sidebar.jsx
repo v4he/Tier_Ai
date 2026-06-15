@@ -12,6 +12,8 @@ import {
 import SidebarItem from "../ui/SidebarItem";
 
 function Sidebar() {
+
+
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
@@ -26,18 +28,18 @@ function Sidebar() {
 
   return (
  
-    <div className={`relative flex flex-col h-screen px-3  transition-all duration-250 ease-in-out select-none
-      ${isCollapsed ? "w-[80px]" : "w-[260px]"}`}
+    <div className={`absolute z-20  bg-black sm:relative sm:bg-transparent flex flex-col h-screen px-3  transition-all duration-250 ease-in-out select-none
+      w-[260px] sm:w-[80px] ${isCollapsed ? "left-[-260px]" : "left-[0px]"}`}
     > 
       
     
       <div className={`flex gap-3 py-9 items-center overflow-hidden transition-all duration-250
-        ${isCollapsed ? "justify-center px-0" : "px-2"}`}
+         sm:justify-center sm:px-0 sm:px-2`}
       >
         <Feather className="text-amber-50 flex-shrink-0" size={32} />
       
-        <span className={`text-2xl text-amber-50 font-bold transition-all duration-200 whitespace-nowrap
-          ${isCollapsed ? "opacity-0 w-0 pointer-events-none" : "opacity-100"}`}
+        <span className={`text-2xl  text-amber-50 font-bold transition-all duration-200 whitespace-nowrap
+          sm:opacity-0 sm:w-0 sm:pointer-events-none"  sm:"opacity-100"}`}
         >
           TierAI
         </span>

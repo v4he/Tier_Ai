@@ -72,6 +72,8 @@ ${compareData.chatHistoryText || "История пуста"}
 2. Сформируй краткий, точный и вежливый ответ на вопрос в поле "chat_reply", опираясь на реальные характеристики товаров. Не придумывай того, чего нет в описании.
 3. Массив "results" сделай пустым [].
 
+
+
 Верни ТОЛЬКО JSON, строго соответствующий заданной схеме. Без markdown-разметки, без лишнего текста вокруг.`;
 
   const response = await gemini.models.generateContent({
@@ -81,12 +83,12 @@ ${compareData.chatHistoryText || "История пуста"}
       responseMimeType: "application/json",
       responseSchema: universalSchema,
       temperature: 0.2,
-      maxOutputTokens: 1500,
+      maxOutputTokens: 15000,
     },
   });
 
   const rawText = response.text;
-
+console.log('Raw Gemini response:', rawText);
   return JSON.parse(rawText);
 }
 
