@@ -10,23 +10,26 @@ function TierCard({
   tierCardId,
   listings,
   setListings,
+  geminiResults
 }) {
   if (!data) return null;
+
+  console.log(data)
 
   const formattedPrice = Number(data.price).toLocaleString("fr-FR", {
     style: "currency",
     currency: "EUR",
   });
 
-  const tierStyles = {
-    s: "bg-[#ff7f7f] text-white",
-    a: "bg-[#ffbf7f] text-white",
-    b: "bg-[#ffff7f] text-gray-800",
-    c: "bg-[#7fff7f] text-gray-800",
-    default: "bg-gray-100 text-gray-600",
-  };
+const tierStyles = {
+  S: "bg-[#ff7f7f] text-[#733838] text-[28px] pt-[6px] font-bold",
+  A: "bg-[#ffbf7f] text-[#733838] text-[28px] pt-[6px] font-bold",
+  B: "bg-[#ffff7f] text-[#733838] text-[28px] pt-[6px] font-bold", 
+  C: "bg-[#7fff7f] text-[#733838] text-[28px] pt-[6px] font-bold", 
+  default: "bg-gray-100 text-gray-600",
+};
 
-  const currentTier = (data.tier || "S").toLowerCase();
+  const currentTier = (data.grade || "-").toUpperCase();
   const currentTierStyle = tierStyles[currentTier] || tierStyles.default;
 
   const pros = Array.isArray(data.pros)

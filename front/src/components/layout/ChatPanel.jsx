@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 
-function ChatPanel({ id, geminiResults, setGeminiResults }) {
+function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
   const [value, setValue] = useState("");
   const [geminiReponse, setGeminiReponse] = useState();
   const [chatData, setChatData] = useState([]);
@@ -45,13 +45,27 @@ function ChatPanel({ id, geminiResults, setGeminiResults }) {
         setChatData((prev) => [...prev, geminiMsg]);
 
         if (data.gemini.mode === "tier") {
-          console.log(data.gemini.mode)
-          if (data.gemini.results.length !== 0) {
-            setGeminiResults(data.gemini.results)
-            console.log(geminiResults)
-            console.log(data.gemini.results)
-          }
+  console.log(data.gemini.mode);
+  if (data.gemini.results.length !== 0) {
+    setGeminiResults(data.gemini.results);
+
+    setListings((prevListings) =>
+      prevListings.map((item) => {
+        const updatedInfo = data.gemini.results.find((res) => res.id === item.id);
+        if (updatedInfo) {
+          return {
+            ...item,
+            ai_verdict: updatedInfo.ai_verdict,
+            pros: updatedInfo.pros,
+            cons: updatedInfo.cons,
+            grade: updatedInfo.grade,
+          };
         }
+        return item;
+      })
+    );
+  }
+}
 
       });
   };

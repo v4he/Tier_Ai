@@ -30,7 +30,7 @@ app.post("/api/parse", async (req, res) => {
 
   try {
     const groqData = await parseProductWithGroq(text);
-
+    console.log(groqData)
     const urlObj = new URL(url);
     const sourceSite = urlObj.hostname;
 
@@ -72,7 +72,15 @@ app.post("/api/parse", async (req, res) => {
 app.get("/api/listings/:id", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT listings.* FROM listings JOIN tier_list_items ON listings.id = tier_list_items.listing_id WHERE tier_list_items.tier_list_id = $1 ORDER BY tier_list_items.created_at DESC`,
+      `SELECT listings.*, 
+              tier_list_items.ai_verdict, 
+              tier_list_items.pros, 
+              tier_list_items.cons, 
+              tier_list_items.grade 
+       FROM listings 
+       JOIN tier_list_items ON listings.id = tier_list_items.listing_id 
+       WHERE tier_list_items.tier_list_id = $1 
+       ORDER BY tier_list_items.created_at DESC`,
       [req.params.id],
     );
     res.json(result.rows);
@@ -80,6 +88,7 @@ app.get("/api/listings/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 app.post("/api/deleteListing", async (req, res) => {
   try {
