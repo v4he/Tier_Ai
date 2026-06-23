@@ -13,9 +13,12 @@ document.getElementById("changeFolderBtn").addEventListener("click", () => {
 document.getElementById("cancelBtn").addEventListener("click", () => {
   document.getElementById("previewBlock").style.display = "none";
   document.getElementById("toastMsg").classList.remove("show");
+  // Чистим кэш при отмене
+  scrapedData = null;
+  selectedImageUrl = null;
 });
 
-// ФУНКЦИЯ ЗАГРУЗКИ ТОВАРОВ ИЗ ТВОЕГО API
+// ФУНКЦИЯ ЗАГРУЗКИ ТОВАРОВ ИЗ API
 async function loadSavedListings(folderId) {
   const container = document.getElementById("listingsContainer");
   const listTitle = document.getElementById("listTitle");
@@ -57,6 +60,10 @@ async function loadSavedListings(folderId) {
 
 // КНОПКА СКАНИРОВАНИЯ
 document.getElementById("scanBtn").addEventListener("click", async () => {
+  // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Жестко обнуляем старые данные при каждом новом нажатии на Scan!
+  scrapedData = null;
+  selectedImageUrl = null;
+
   const toastEl = document.getElementById("toastMsg");
   const previewBlock = document.getElementById("previewBlock");
   const imagePicker = document.getElementById("imagePicker");
@@ -77,14 +84,12 @@ document.getElementById("scanBtn").addEventListener("click", async () => {
       {
         target: { tabId: tab.id },
         func: () => {
-          // Хелпер для очистки и разбора srcset (Zalando часто использует его)
           const parseSrcset = (srcset) => {
             if (!srcset) return null;
             const candidates = srcset.split(',').map(s => s.trim().split(' ')[0]);
-            return candidates[candidates.length - 1] || null; // Берем самое качественное (последнее) фото
+            return candidates[candidates.length - 1] || null;
           };
 
-          // Хелпер для вытаскивания картинок из CSS background-image
           const getBgImageUrl = (el) => {
             const bg = window.getComputedStyle(el).backgroundImage;
             if (bg && bg !== 'none' && bg.startsWith('url')) {
@@ -94,27 +99,21 @@ document.getElementById("scanBtn").addEventListener("click", async () => {
             return null;
           };
 
-          // 1. Собираем базовые мета-теги
           let candidates = [];
           const ogImg = document.querySelector('meta[property="og:image"]');
           const twitterImg = document.querySelector('meta[name="twitter:image"]');
           if (ogImg && ogImg.content) candidates.push({ src: ogImg.content, area: 999999 });
           if (twitterImg && twitterImg.content) candidates.push({ src: twitterImg.content, area: 999999 });
 
-          // 2. Ищем внутри тегов <picture> и источников <source>
           document.querySelectorAll('picture, source').forEach(el => {
             const src = parseSrcset(el.getAttribute('srcset')) || el.getAttribute('src');
             if (src) candidates.push({ src, area: 500000 });
           });
 
-          // 3. Сканируем абсолютно ВСЕ элементы на странице на наличие фоновых изображений (для сложных версток)
           document.querySelectorAll('*').forEach(el => {
-            // Если это обычный тег IMG
             if (el.tagName === 'IMG') {
-              // Ищем во всех возможных ленивых атрибутах, включая srcset
               let src = el.src;
               const lazyAttributes = ['data-old-hires', 'data-a-dynamic-image', 'data-lazy-src', 'data-src', 'data-original', 'srcset', 'data-srcset'];
-              
               for (let attr of lazyAttributes) {
                 let attrValue = el.getAttribute(attr);
                 if (attrValue) {
@@ -132,15 +131,12 @@ document.getElementById("scanBtn").addEventListener("click", async () => {
                   }
                 }
               }
-
               if (src && !src.startsWith('data:image')) {
-                // Измеряем размеры. Если они 0 (скрыта), даем дефолтный вес 300x300, чтобы не отсечь её
                 const width = el.naturalWidth || el.clientWidth || 300;
                 const height = el.naturalHeight || el.clientHeight || 300;
-                candidates.push({ src, area: width * height, element: el });
+                candidates.push({ src, area: width * height });
               }
             } else {
-              // Если это не IMG, проверяем фоновый рисунок в CSS
               const bgSrc = getBgImageUrl(el);
               if (bgSrc && !bgSrc.startsWith('data:image')) {
                 const width = el.clientWidth || 300;
@@ -150,41 +146,30 @@ document.getElementById("scanBtn").addEventListener("click", async () => {
             }
           });
 
-          // СЛОВАРЬ МУСОРА
           const trashWords = ['avatar', 'logo', 'icon', 'sprite', 'bg', 'banner', 'loader', 'theme', 'svg', 'metric', 'pixel'];
-
-          // Фильтруем собранный массив
           let validUrls = [];
           candidates.forEach(c => {
             if (!c.src) return;
-            
-            // Превращаем относительные ссылки в абсолютные (ведь некоторые сайты пишут просто /media/image.jpg)
             let absoluteUrl = c.src;
             try {
               absoluteUrl = new URL(c.src, window.location.href).href;
             } catch(e) { return; }
 
             const lowerSrc = absoluteUrl.toLowerCase();
-            
-            // Защита от мусора
             if (trashWords.some(word => lowerSrc.includes(word))) return;
-            
-            // Если размер точно известен и он слишком мелкий — пропускаем
             if (c.area < 150 * 150) return;
 
             validUrls.push({ url: absoluteUrl, area: c.area });
           });
 
-          // Сортируем от больших изображений к меньшим
           validUrls.sort((a, b) => b.area - a.area);
-
-          // Убираем дубликаты
           let uniqueUrls = [...new Set(validUrls.map(v => v.url))];
 
           return {
             url: window.location.href,
-            text: document.body.innerText,
-            imageCandidates: uniqueUrls.slice(0, 9) // Возьмем топ-9 кандидатов
+            html: document.documentElement.outerHTML, 
+            imageCandidates: uniqueUrls.slice(0, 9),
+            titleFallback: document.title
           };
         }
       },
@@ -195,27 +180,18 @@ document.getElementById("scanBtn").addEventListener("click", async () => {
         }
 
         scrapedData = results[0].result;
-        const { imageCandidates, text } = scrapedData;
+        const { imageCandidates, titleFallback } = scrapedData;
 
         if (!imageCandidates || imageCandidates.length === 0) {
-          toastEl.textContent = "Текст собран, но фото не найдены.";
+          toastEl.textContent = "Текст готов к отправке, но фото товара не найдены.";
           selectedImageUrl = null;
           return;
         }
 
         toastEl.classList.remove("show");
 
-        let title = "Товар из сканера";
-        let price = "Цена не найдена";
-        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-        if (lines.length > 0) title = lines[0].slice(0, 60);
-        for (let line of lines) {
-          const match = line.match(/(\d[\d\s.,]*)\s*(€|\$|руб)/i);
-          if (match) { price = match[0]; break; }
-        }
-
-        document.getElementById('productTitle').textContent = title;
-        document.getElementById('productPrice').innerHTML = `${price} <span>(найдено)</span>`;
+        document.getElementById('productTitle').textContent = titleFallback.slice(0, 60) + "...";
+        document.getElementById('productPrice').innerHTML = `Определяется ИИ... <span>(в процессе)</span>`;
 
         selectedImageUrl = imageCandidates[0]; 
         imagePicker.innerHTML = '';
@@ -243,10 +219,13 @@ document.getElementById("scanBtn").addEventListener("click", async () => {
   }
 });
 
-// КНОПКА ПОДТВЕРДИТЬ (ОТПРАВКА НА СЕРВЕР)
+// КНОПКА ПОДТВЕРДИТЬ
 document.getElementById('confirmBtn').addEventListener('click', async () => {
   const innerStatus = document.getElementById('innerStatus');
-  if (!scrapedData || !selectedImageUrl || !currentFolderId) return;
+  if (!scrapedData || !selectedImageUrl || !currentFolderId) {
+    innerStatus.textContent = 'Ошибка: нет данных для отправки';
+    return;
+  }
 
   innerStatus.textContent = 'Сохранение товара...';
 
@@ -256,13 +235,13 @@ document.getElementById('confirmBtn').addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: scrapedData.url,
-        text: scrapedData.text,
+        html: scrapedData.html, 
         imageUrl: selectedImageUrl,
         tierListId: Number(currentFolderId) 
       })
     });
 
-    const data = await response.json();
+    await response.json();
     innerStatus.textContent = '✓ Успешно добавлено!';
     
     await loadSavedListings(currentFolderId);
@@ -270,6 +249,9 @@ document.getElementById('confirmBtn').addEventListener('click', async () => {
     setTimeout(() => {
       document.getElementById('previewBlock').style.display = 'none';
       innerStatus.textContent = '';
+      // Чистим память после успешной отправки лота
+      scrapedData = null;
+      selectedImageUrl = null;
     }, 1000);
 
   } catch (err) {

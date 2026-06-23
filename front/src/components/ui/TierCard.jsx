@@ -14,20 +14,18 @@ function TierCard({
 }) {
   if (!data) return null;
 
-  console.log(data)
-
   const formattedPrice = Number(data.price).toLocaleString("fr-FR", {
     style: "currency",
     currency: "EUR",
   });
 
-const tierStyles = {
-  S: "bg-[#ff7f7f] text-[#733838] text-[28px] pt-[6px] font-bold",
-  A: "bg-[#ffbf7f] text-[#733838] text-[28px] pt-[6px] font-bold",
-  B: "bg-[#ffff7f] text-[#733838] text-[28px] pt-[6px] font-bold", 
-  C: "bg-[#7fff7f] text-[#733838] text-[28px] pt-[6px] font-bold", 
-  default: "bg-gray-100 text-gray-600",
-};
+  const tierStyles = {
+    S: "bg-[#ff7f7f] text-[#733838] text-[28px] pt-[6px] font-bold",
+    A: "bg-[#ffbf7f] text-[#733838] text-[28px] pt-[6px] font-bold",
+    B: "bg-[#ffff7f] text-[#733838] text-[28px] pt-[6px] font-bold", 
+    C: "bg-[#7fff7f] text-[#733838] text-[28px] pt-[6px] font-bold", 
+    default: "bg-gray-100 text-gray-600",
+  };
 
   const currentTier = (data.grade || "-").toUpperCase();
   const currentTierStyle = tierStyles[currentTier] || tierStyles.default;
@@ -37,8 +35,6 @@ const tierStyles = {
     : ["Great value for money", "Premium build quality"];
 
   const cons = Array.isArray(data.cons) ? data.cons : ["Limited color options"];
-
-  listings.filter((element) => element !== 35);
 
   const handleDeleteCard = async (e) => {
     e.stopPropagation();
@@ -57,8 +53,6 @@ const tierStyles = {
       }
 
       const data = await reponse.json();
-      console.log(data)
-      
       setListings(prev => prev.filter(elem => elem.id !== data));
     } catch (error) {
       console.log(error);
@@ -70,22 +64,11 @@ const tierStyles = {
       <div className="rounded-[30px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.05)] overflow-hidden">
         <div
           onClick={onToggle}
-          className={`
-            group relative flex flex-col cursor-pointer
-            transition-[padding]
-            duration-250 ease-out
-            ${isOpen ? "p-6" : "p-4 min-h-[120px] justify-center"}
-          `}
+          className="group relative flex flex-col cursor-pointer p-5"
         >
           <div className="flex items-center gap-6 pr-24 pl-1">
             <div className="flex-shrink-0">
-              <div
-                className={`
-                  rounded-2xl  overflow-hidden bg-[#f5f5f5]
-                  transition-all duration-250
-                  ${isOpen ? "w-32 h-32 filter shadow-lg" : "w-20 h-20 "}
-                `}
-              >
+              <div className="rounded-2xl overflow-hidden bg-[#f5f5f5] w-24 h-24 filter shadow-sm">
                 <img
                   src={data.image_url || data.image}
                   alt={data.title}
@@ -101,13 +84,7 @@ const tierStyles = {
                 <span>{data.source_site}</span>
               </div>
 
-              <h3
-                className={`
-                  text-gray-800 font-medium leading-snug line-clamp-2
-                  transition-all duration-200
-                  ${isOpen ? "text-xl mt-1" : "text-base mt-0.5"}
-                `}
-              >
+              <h3 className="text-gray-800 font-medium leading-snug line-clamp-2 mt-1 text-lg">
                 {data.title}
               </h3>
 
@@ -129,7 +106,7 @@ const tierStyles = {
             className={`
               absolute right-0 top-0 bottom-0 w-12
               flex items-center justify-center
-              text-4xl  pb-2.5
+              text-4xl pb-2.5
               border-l border-black/[0.04]
               ${currentTierStyle}
             `}
@@ -150,7 +127,7 @@ const tierStyles = {
             <button
               onClick={handleDeleteCard}
               className="
-              cursor-pointer
+                cursor-pointer
                 p-1.5 rounded-lg
                 bg-black/[0.04]
                 hover:bg-red-500
@@ -180,6 +157,7 @@ const tierStyles = {
             </a>
           </div>
 
+          {/* Внутренний блок с информацией */}
           <div
             className={`
               grid overflow-hidden
@@ -192,15 +170,15 @@ const tierStyles = {
             `}
           >
             <div className="overflow-hidden pr-14 pl-1">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-green-600">
+                  <span className="text-[11px] uppercase font-bold tracking-wider text-green-600">
                     Pros
                   </span>
 
-                  <ul className="mt-2 space-y-1">
+                  <ul className="mt-2 space-y-1.5">
                     {pros.map((pro, index) => (
-                      <li key={index} className="text-[11px] text-gray-600">
+                      <li key={index} className="text-[13px] leading-relaxed text-gray-600">
                         • {pro}
                       </li>
                     ))}
@@ -208,13 +186,13 @@ const tierStyles = {
                 </div>
 
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-rose-500">
+                  <span className="text-[11px] uppercase font-bold tracking-wider text-rose-500">
                     Cons
                   </span>
 
-                  <ul className="mt-2 space-y-1">
+                  <ul className="mt-2 space-y-1.5">
                     {cons.map((con, index) => (
-                      <li key={index} className="text-[11px] text-gray-600">
+                      <li key={index} className="text-[13px] leading-relaxed text-gray-600">
                         • {con}
                       </li>
                     ))}
@@ -222,12 +200,12 @@ const tierStyles = {
                 </div>
               </div>
 
-              <div className="mt-4 p-3 rounded-2xl bg-[#f6f6f7]">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-purple-600">
+              <div className="mt-5 p-4 rounded-2xl bg-[#f6f6f7]"> 
+                <span className="text-[11px] uppercase font-bold tracking-wider text-purple-600">
                   Verdict AI
                 </span>
 
-                <p className="mt-1 text-[11px] italic text-gray-500 leading-relaxed">
+                <p className="mt-1.5 text-[13px] font-normal italic text-gray-600 leading-relaxed">
                   {data.ai_verdict}
                 </p>
               </div>

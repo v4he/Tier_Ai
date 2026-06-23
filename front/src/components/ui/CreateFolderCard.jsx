@@ -52,7 +52,7 @@ function CreateFolderCard({
       user_id: 1,
     };
 
-    setTierFolder((prev) => [...prev, cardMsg]);
+    setTierFolder((prev) => [cardMsg,...prev]);
   };
 
   return (

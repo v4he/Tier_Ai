@@ -17,7 +17,6 @@ function DashboardCard({ tierFolderData, tierFolder, setTierFolder }) {
     : "";
 
   const deleteFolder = (e) => {
-
     e.preventDefault();
     e.stopPropagation();
 
@@ -31,10 +30,7 @@ function DashboardCard({ tierFolderData, tierFolder, setTierFolder }) {
   };
 
   return (
-  
     <div className="group relative w-full aspect-square">
-      
-
       <Link to={`tier-list/${id}`} className="block w-full h-full">
         <div
           className="
@@ -44,7 +40,7 @@ function DashboardCard({ tierFolderData, tierFolder, setTierFolder }) {
             hover:-translate-y-1
             transition-all duration-300 ease-out
             cursor-pointer flex flex-col overflow-hidden 
-            border border-black/[0.02]
+            
           "
         >
           <div className="relative flex-1 w-full bg-[#f9f9fa] overflow-hidden">
@@ -82,7 +78,6 @@ function DashboardCard({ tierFolderData, tierFolder, setTierFolder }) {
         </div>
       </Link>
 
-
       <div
         onClick={deleteFolder}
         className="
@@ -96,7 +91,6 @@ function DashboardCard({ tierFolderData, tierFolder, setTierFolder }) {
       >
         <Trash className="w-4 h-4" />
       </div>
-
     </div>
   );
 }

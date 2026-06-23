@@ -8,6 +8,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
   const [geminiReponse, setGeminiReponse] = useState();
   const [chatData, setChatData] = useState([]);
   const [mode, setMode] = useState("tier");
+  const [isLoading, setIsLoading] = useState(false); // Индикатор загрузки
 
   console.log(id);
 
@@ -15,7 +16,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
     const valueCopy = value;
     setValue("");
 
-    if (valueCopy !== "") {
+    if (valueCopy.trim() !== "") {
       const userMsg = {
         id: Date.now(),
         role: "user",
@@ -26,48 +27,64 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
       setChatData((prev) => [...prev, userMsg]);
     }
 
-    await fetch("http://localhost:5000/api/compareData", {
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-      body: JSON.stringify({ userMessage: valueCopy, tierListId: id }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const geminiMsg = {
-          id: Date.now(),
-          role: "assistant",
-          content: data.gemini.chat_reply,
-          created_at: new Date().toISOString(),
-        };
-        console.log(data.gemini)
-        setGeminiReponse(geminiMsg);
+    // Включаем лоадер перед отправкой
+    setIsLoading(true);
 
-        setChatData((prev) => [...prev, geminiMsg]);
-
-        if (data.gemini.mode === "tier") {
-  console.log(data.gemini.mode);
-  if (data.gemini.results.length !== 0) {
-    setGeminiResults(data.gemini.results);
-
-    setListings((prevListings) =>
-      prevListings.map((item) => {
-        const updatedInfo = data.gemini.results.find((res) => res.id === item.id);
-        if (updatedInfo) {
-          return {
-            ...item,
-            ai_verdict: updatedInfo.ai_verdict,
-            pros: updatedInfo.pros,
-            cons: updatedInfo.cons,
-            grade: updatedInfo.grade,
-          };
-        }
-        return item;
-      })
-    );
-  }
-}
-
+    try {
+      const res = await fetch("http://localhost:5000/api/compareData", {
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        body: JSON.stringify({ userMessage: valueCopy, tierListId: id }),
       });
+      
+      const data = await res.json();
+
+      const geminiMsg = {
+        id: Date.now(),
+        role: "assistant",
+        content: data.gemini.chat_reply,
+        created_at: new Date().toISOString(),
+      };
+      
+      console.log(data.gemini);
+      setGeminiReponse(geminiMsg);
+      setChatData((prev) => [...prev, geminiMsg]);
+
+      if (data.gemini.mode === "tier") {
+        console.log(data.gemini.mode);
+        if (data.gemini.results.length !== 0) {
+          setGeminiResults(data.gemini.results);
+
+          setListings((prevListings) =>
+            prevListings.map((item) => {
+              const updatedInfo = data.gemini.results.find((res) => res.id === item.id);
+              if (updatedInfo) {
+                return {
+                  ...item,
+                  ai_verdict: updatedInfo.ai_verdict,
+                  pros: updatedInfo.pros,
+                  cons: updatedInfo.cons,
+                  grade: updatedInfo.grade,
+                };
+              }
+              return item;
+            })
+          );
+        }
+      }
+    } catch (error) {
+      console.log("Ошибка запроса:", error);
+    } finally {
+      // Выключаем лоадер в любом случае
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleMessage();
+    }
   };
 
   useEffect(() => {
@@ -84,10 +101,10 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
       chatContainerRef.current.scrollTop =
         chatContainerRef.current.scrollHeight;
     }
-  }, [chatData]);
+  }, [chatData, isLoading]); // Скроллим также при появлении точек
 
   return (
-    <div className="relative w-100 h-full bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
+    <div className="relative w-92 h-full bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
       <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center justify-between shadow-xl z-10">
         <span>AI CHAT</span>
 
@@ -144,6 +161,17 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
               }
               return null;
             })}
+
+          {/* Индикатор того, что Gemini думает */}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="p-4 bg-[#4d4c4c] rounded-2xl shadow-sm flex items-center space-x-1.5">
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -151,21 +179,26 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
         <div className="flex items-end gap-4 w-full border border-black/5 bg-white p-2 rounded-2xl">
           <TextareaAutosize
             maxRows={10}
-            className="flex-1 bg-transparent border-none outline-none resize-none p-1 text-sm text-gray-700"
+            disabled={isLoading}
+            className="flex-1 bg-transparent border-none outline-none resize-none p-1 text-sm text-gray-700 disabled:opacity-50"
             placeholder={
               mode === "tier" ? "Make Tier List..." : "Type a message to AI..."
             }
             value={value}
             onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
 
         <div className="flex flex-col justify-end">
           <button
             onClick={handleMessage}
-            className="border border-white/10 text-white px-4 py-3 rounded-xl transition-colors font-medium"
+            disabled={isLoading}
+            className={`border border-white/10 text-white px-4 py-3 rounded-xl font-medium transition-all ${
+              isLoading ? "opacity-50 cursor-not-allowed bg-transparent" : "hover:bg-white/5"
+            }`}
           >
-            Send
+            {isLoading ? "..." : "Send"}
           </button>
         </div>
       </div>

@@ -8,32 +8,37 @@ const universalSchema = {
   properties: {
     mode: {
       type: Type.STRING,
-      description:
-        "Режим ответа: 'tier' если пользователь просит сравнить/оценить/создать тир-лист, или 'chat' если это обычный вопрос или беседа.",
+      description: "Режим ответа: 'tier' если пользователь явно просит составить тир-лист/рейтинг/сравнение, или 'chat' для живого общения и уточнения критериев.",
     },
     chat_reply: {
       type: Type.STRING,
-      description:
-        "Текстовый ответ или вводная вежливая фраза для пользователя (например, 'Вот ваш тир-лист:' или ответ на вопрос).",
+      description: "Живой, человечный ответ пользователю (поддержка беседы, уточняющий вопрос или комментарий к рейтингу).",
     },
     results: {
       type: Type.ARRAY,
-      description:
-        "Массив с анализом каждого товара. Заполняется только если mode === 'tier'. Если mode === 'chat', возвращается пустой массив.",
+      description: "Массив с анализом товаров. Заполняется только в режиме 'tier'. В режиме 'chat' возвращается пустой массив [].",
       items: {
         type: Type.OBJECT,
         properties: {
           id: { type: Type.INTEGER },
-          ai_verdict: { type: Type.STRING },
-          pros: { type: Type.ARRAY, items: { type: Type.STRING } },
-          cons: {
-            type: Type.ARRAY,
+          ai_verdict: { 
+            type: Type.STRING, 
+            description: "Краткое и емкое обоснование оценки товара на основе его сильных и слабых сторон." 
+          },
+          pros: { 
+            type: Type.ARRAY, 
             items: { type: Type.STRING },
+            description: "Ключевые плюсы товара (короткие фразы по 2-4 слова)."
+          },
+          cons: { 
+            type: Type.ARRAY, 
+            items: { type: Type.STRING },
+            description: "Ключевые минусы товара (короткие фразы по 2-4 слова)."
           },
           grade: {
-              type: Type.STRING,
-              description: "Оценка товара: S, A, B или C",
-            },
+            type: Type.STRING,
+            description: "Итоговый грейд: S, A, B или C",
+          },
         },
         required: ["id", "ai_verdict", "pros", "cons", "grade"],
       },
@@ -46,49 +51,61 @@ async function Gemini(compareData) {
   const listingsText = compareData.compareList
     .map(
       (item) =>
-        `ID: ${item.id}, Title: ${item.title}, Price: ${item.price}€, Condition: ${item.condition_category}, Seller Rating: ${item.seller_rating}, Reviews: ${item.seller_reviews_count}, Description: ${item.clean_description || "No description"}`,
+        `ID: ${item.id}, Title: ${item.title}, Price: ${item.price}€, Condition: ${item.condition_category}, Seller Rating: ${item.seller_rating || "N/A"}, Reviews: ${item.seller_reviews_count || "N/A"}, Description: ${item.clean_description || "No description"}`,
     )
     .join("\n");
 
-  const prompt = `Ты — интеллектуальный ассистент по анализу и сравнению товаров. Перед тобой список товаров и история диалога.
+  const historyText = compareData.chatHistoryText && compareData.chatHistoryText.length > 0
+    ? compareData.chatHistoryText.map(msg => `[${msg.role}]: ${msg.content}`).join("\n")
+    : "История пуста";
 
-Вот список товаров для контекста:
+  const systemPrompt = `Ты — прагматичный эксперт, который выбирает товар как для себя.
+Скептичен к цене и состоянию, защищаешь от переплат и скрытых дефектов.
+
+Общайся естественно. Оценивай только по данным лота: цена, состояние, описание, рейтинг продавца.
+
+СТРОГОЕ ПРАВИЛО: По умолчанию всегда общайся в режиме диалога (mode: chat). Тебе категорически запрещено делать тир-лист (рейтинг) прямо в чате, пока пользователь сам явно и недвусмысленно не попросит тебя об этом.
+
+Проактивность: Если присланных лотов и данных в них достаточно для оценки, не делай тир-лист сразу, а вежливо спроси пользователя, нужно ли составить для него тир-лист/рейтинг.
+
+Объективность грейдов: Если присланные товары откровенно плохие или переоцененные, ты не должен искусственно завышать им оценки (ставить S или A) в будущем тир-листе. Если они заслуживают только C или B, ставь их честно.
+
+Внереестровые рекомендации: Если текущие варианты плохие, прямо в чате дай конкретную рекомендацию — какие другие модели, бренды или параметры (вне текущего списка) пользователю стоит поискать и отсканировать, чтобы найти адекватный вариант.
+
+Mode: chat (по умолчанию): Скептический разбор лотов, вопросы, подсвечивание рисков, предложение составить тир-лист (если данных хватает) и рекомендации альтернативных товаров для поиска.
+
+Mode: tier (включается ТОЛЬКО по прямому запросу пользователя): Выдай честный тир-лист с оценками S/A/B/C, коротким вердиктом и маркерами плюсов/минусов для каждого товара.
+
+История диалога:
+${historyText}
+
+Товары для анализа:
 ${listingsText}
 
-Вот история последних сообщений в чате (для понимания контекста):
-${compareData.chatHistoryText || "История пуста"}
+Запрос пользователя: "${compareData.frontMessage}"`;
 
-Текущее сообщение пользователя: "${compareData.frontMessage}"
+  const userContent = `История диалога:
+${historyText}
 
-Твоя задача — проанализировать сообщение пользователя и строго определить его намерение:
+Предоставленные позиции для анализа:
+${listingsText}
 
-КЕЙС 1: Если пользователь просит СРАВНИТЬ товары, ОЦЕНИТЬ их, ВЫБРАТЬ лучший или СОЗДАТЬ ТИР-ЛИСТ:
-1. Установи "mode": "tier"
-2. В поле "chat_reply" обязательно напиши короткую вводную фразу на языке пользователя (например: "Вот ваш тир-лист и подробное сравнение товаров:", "Я проанализировал доступные варианты, вот готовый тир-лист:" или подобное).
-3. В массив "results" для КАЖДОГО товара из предоставленного списка подготовь структурированный анализ (id, ai_verdict, pros, cons).
-
-КЕЙС 2: Если пользователь задает ОБЩИЙ ВОПРОС о товарах (например: "У какого ноута больше память?", "Почему первый такой дорогой?") или просто приветствует/общается:
-1. Установи "mode": "chat"
-2. Сформируй краткий, точный и вежливый ответ на вопрос в поле "chat_reply", опираясь на реальные характеристики товаров. Не придумывай того, чего нет в описании.
-3. Массив "results" сделай пустым [].
-
-
-
-Верни ТОЛЬКО JSON, строго соответствующий заданной схеме. Без markdown-разметки, без лишнего текста вокруг.`;
+Текущий запрос пользователя: "${compareData.frontMessage}"`;
 
   const response = await gemini.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: prompt,
+    contents: userContent,
     config: {
+      systemInstruction: systemPrompt,
       responseMimeType: "application/json",
       responseSchema: universalSchema,
-      temperature: 0.2,
-      maxOutputTokens: 15000,
+      temperature: 0.4,
+      maxOutputTokens: 8000,
     },
   });
 
   const rawText = response.text;
-console.log('Raw Gemini response:', rawText);
+  console.log('Raw Gemini response:', rawText);
   return JSON.parse(rawText);
 }
 
