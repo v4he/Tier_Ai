@@ -9,6 +9,8 @@ document.getElementById("changeFolderBtn").addEventListener("click", () => {
   });
 });
 
+
+
 // Нажатие на "Отмена" в модалке превью
 document.getElementById("cancelBtn").addEventListener("click", () => {
   document.getElementById("previewBlock").style.display = "none";
