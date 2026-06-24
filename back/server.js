@@ -4,7 +4,8 @@ const pool = require("./db");
 const { parseProductWithGroq } = require("./services/groqService");
 require("dotenv").config();
 const cors = require("cors");
-const { Gemini } = require("./services/geminiService");
+// ПОДКЛЮЧАЕМ НАШ СЕРВИС DEEPSEEK ВМЕСТО GEMINI
+const { DeepSeekCompare } = require("./services/geminiService");
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.post("/api/parse", async (req, res) => {
 
     console.log(`[Парсер]: Очистка завершена. Текст сокращен с ${html.length} до ${cleanText.length} символов.`);
 
+    // Здесь для первичного разбора карточки остается Groq/Gemini — это идеально
     const groqData = await parseProductWithGroq(cleanText);
     console.log("Ответ от Groq/Gemini:", groqData);
 
@@ -122,7 +124,6 @@ app.get("/api/listings/:id", async (req, res) => {
   }
 });
 
-
 app.post("/api/deleteListing", async (req, res) => {
   try {
     const result = await pool.query(
@@ -133,6 +134,7 @@ app.post("/api/deleteListing", async (req, res) => {
     res.json(result.rows[0].listing_id);
   } catch (error) {
     console.log(error);
+    res.status(500).json({ error: "Delete error" });
   }
 });
 
@@ -168,6 +170,7 @@ app.post("/api/tierFolderInsert", async (req, res) => {
     res.json({ result: result.rows[0].id });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ error: "Insert error" });
   }
 });
 
@@ -181,8 +184,10 @@ app.post("/api/tierFolderDelete", async (req, res) => {
     res.json({ result: result.rows[0].id });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ error: "Delete error" });
   }
 });
+
 
 app.post("/api/compareData", async (req, res) => {
   try {
@@ -204,7 +209,6 @@ app.post("/api/compareData", async (req, res) => {
       [tierListId],
     );
 
-   
     const chatHistoryResult = await pool.query(
       `SELECT * FROM (
          SELECT * FROM chat_messages 
@@ -216,24 +220,22 @@ app.post("/api/compareData", async (req, res) => {
       [tierListId],
     );
 
-
-    const geminiVerdict = await Gemini({
+    // ВЫЗЫВАЕМ СЕРВИС DEEPSEEK ВМЕСТО GEMINI
+    const deepseekVerdict = await DeepSeekCompare({
       compareList: listingsResult.rows,
       frontMessage: userMessage,
       chatHistoryText: chatHistoryResult.rows, 
     });
 
-    const aiMessageText = geminiVerdict?.chat_reply || "AI response error";
+    const aiMessageText = deepseekVerdict?.chat_reply || "AI response error";
 
-   
     await pool.query(
       "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)",
       [tierListId, "assistant", aiMessageText],
     );
 
-
-    if (geminiVerdict.results && geminiVerdict.results.length !== 0) {
-      for (const element of geminiVerdict.results) {
+    if (deepseekVerdict.results && deepseekVerdict.results.length !== 0) {
+      for (const element of deepseekVerdict.results) {
         const safePros = JSON.stringify(element.pros);
         const safeCons = JSON.stringify(element.cons);
 
@@ -249,10 +251,11 @@ app.post("/api/compareData", async (req, res) => {
       }
     }
 
-    res.json({ gemini: geminiVerdict });
+    // Возвращаем результат. На фронтенде можешь ловить свойство "deepseek" вместо "gemini"
+    res.json({ gemini: deepseekVerdict });
 
   } catch (error) {
-    console.error("Error in compareData API:", error);
+    console.error("Error in compareData API (DeepSeek):", error);
     res.status(500).json({ error: "Internal server error during analysis" });
   }
 });
@@ -267,6 +270,7 @@ app.get("/api/chatMessages/:id", async (req, res) => {
       res.json(result.rows);
     } catch (error) {
       console.log(error);
+      res.status(500).json({ error: "Database error" });
     }
   }
 });
