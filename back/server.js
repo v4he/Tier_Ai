@@ -1,11 +1,10 @@
 const express = require("express");
 const cheerio = require("cheerio");
 const pool = require("./db");
-const { parseProductWithGroq } = require("./services/groqService");
+const { parseProductWithGemini } = require("./services/geminiService");
 require("dotenv").config();
 const cors = require("cors");
-// ПОДКЛЮЧАЕМ НАШ СЕРВИС DEEPSEEK ВМЕСТО GEMINI
-const { DeepSeekCompare } = require("./services/geminiService");
+const { DeepSeekCompare } = require("./services/deepseekService");
 
 const app = express();
 
@@ -63,8 +62,8 @@ app.post("/api/parse", async (req, res) => {
 
     console.log(`[Парсер]: Очистка завершена. Текст сокращен с ${html.length} до ${cleanText.length} символов.`);
 
-    // Здесь для первичного разбора карточки остается Groq/Gemini — это идеально
-    const groqData = await parseProductWithGroq(cleanText);
+
+    const groqData = await parseProductWithGemini(cleanText);
     console.log("Ответ от Groq/Gemini:", groqData);
 
     const urlObj = new URL(url);
@@ -220,7 +219,7 @@ app.post("/api/compareData", async (req, res) => {
       [tierListId],
     );
 
-    // ВЫЗЫВАЕМ СЕРВИС DEEPSEEK ВМЕСТО GEMINI
+
     const deepseekVerdict = await DeepSeekCompare({
       compareList: listingsResult.rows,
       frontMessage: userMessage,
@@ -251,7 +250,7 @@ app.post("/api/compareData", async (req, res) => {
       }
     }
 
-    // Возвращаем результат. На фронтенде можешь ловить свойство "deepseek" вместо "gemini"
+
     res.json({ gemini: deepseekVerdict });
 
   } catch (error) {
