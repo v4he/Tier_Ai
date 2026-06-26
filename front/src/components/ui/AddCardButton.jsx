@@ -1,19 +1,17 @@
 import React from 'react'
 import { DiamondPlus } from 'lucide-react'
 
-function AddCardButton ({onClick, addFolder}) {
+function AddCardButton({ onClick, addFolder }) {
   return (
-    
-    <div onClick={onClick} className={`aspect-square w-full flex justify-center items-center bg-white
-        rounded-[30px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] 
-        hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-        hover:-translate-y-1
-        transition-all duration-300 ease-out
-        cursor-pointer flex flex-col overflow-hidden 
-        border border-black/[0.02] ${addFolder ? 'hidden' : 'block'}`}>
-
-        <DiamondPlus size={130} className='text-[#d3d3d2]' /></div>
-    
+    <div
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label="Ajouter une tier list"
+      className={`aspect-square w-full flex justify-center items-center bg-white rounded-[30px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 ease-out cursor-pointer flex flex-col overflow-hidden border border-black/[0.02] ${addFolder ? 'hidden' : 'block'}`}
+    >
+      <DiamondPlus size={130} className='text-[#d3d3d2]' aria-hidden="true" />
+    </div>
   )
 }
 

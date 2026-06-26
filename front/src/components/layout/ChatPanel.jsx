@@ -5,12 +5,9 @@ import TextareaAutosize from "react-textarea-autosize";
 
 function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
   const [value, setValue] = useState("");
-  const [geminiReponse, setGeminiReponse] = useState();
   const [chatData, setChatData] = useState([]);
   const [mode, setMode] = useState("tier");
-  const [isLoading, setIsLoading] = useState(false); // Индикатор загрузки
-
-  console.log(id);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleMessage = async () => {
     const valueCopy = value;
@@ -23,20 +20,31 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
         content: valueCopy,
         created_at: new Date().toISOString(),
       };
-
       setChatData((prev) => [...prev, userMsg]);
     }
 
-    // Включаем лоадер перед отправкой
     setIsLoading(true);
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch("http://localhost:5000/api/compareData", {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         method: "POST",
         body: JSON.stringify({ userMessage: valueCopy, tierListId: id }),
       });
-      
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error('Network response was not ok');
+      }
+
       const data = await res.json();
 
       const geminiMsg = {
@@ -45,16 +53,12 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
         content: data.gemini.chat_reply,
         created_at: new Date().toISOString(),
       };
-      
-      console.log(data.gemini);
-      setGeminiReponse(geminiMsg);
+
       setChatData((prev) => [...prev, geminiMsg]);
 
       if (data.gemini.mode === "tier") {
-        console.log(data.gemini.mode);
         if (data.gemini.results.length !== 0) {
           setGeminiResults(data.gemini.results);
-
           setListings((prevListings) =>
             prevListings.map((item) => {
               const updatedInfo = data.gemini.results.find((res) => res.id === item.id);
@@ -73,9 +77,8 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
         }
       }
     } catch (error) {
-      console.log("Ошибка запроса:", error);
+      console.log("Erreur de requête:", error);
     } finally {
-      // Выключаем лоадер в любом случае
       setIsLoading(false);
     }
   };
@@ -88,29 +91,42 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
   };
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/chatMessages/${id}`)
-      .then((res) => res.json())
+    fetch(`http://localhost:5000/api/chatMessages/${id}`, {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then((res) => {
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return;
+          }
+          throw new Error('Network response was not ok');
+        }
+        return res.json();
+      })
       .then((data) => setChatData(data))
       .catch((error) => console.log(error));
-  }, []);
+  }, [id]);
 
   const chatContainerRef = useRef(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatData, isLoading]); // Скроллим также при появлении точек
+  }, [chatData, isLoading]);
 
   return (
     <div className="relative w-92 h-full bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
       <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center justify-between shadow-xl z-10">
         <span>AI CHAT</span>
-
         <div className="flex bg-[#2d2d2d] p-1 rounded-xl text-xs font-medium">
           <button
             onClick={() => setMode("tier")}
+            aria-label="Mode Tier List"
             className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
               mode === "tier"
                 ? "bg-[#ba6f6f] text-white shadow"
@@ -121,6 +137,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
           </button>
           <button
             onClick={() => setMode("chat")}
+            aria-label="Mode Chat"
             className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
               mode === "chat"
                 ? "bg-[#ffffff] text-black shadow"
@@ -142,7 +159,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
               if (elem.role === "assistant") {
                 return (
                   <div key={index} className="flex justify-start">
-                    <div className=" p-3 text-white bg-[#4d4c4c] rounded-2xl shadow-sm">
+                    <div className="p-3 text-white bg-[#4d4c4c] rounded-2xl shadow-sm">
                       {elem.content}
                     </div>
                   </div>
@@ -161,8 +178,6 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
               }
               return null;
             })}
-
-          {/* Индикатор того, что Gemini думает */}
           {isLoading && (
             <div className="flex justify-start">
               <div className="p-4 bg-[#4d4c4c] rounded-2xl shadow-sm flex items-center space-x-1.5">
@@ -180,20 +195,20 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
           <TextareaAutosize
             maxRows={10}
             disabled={isLoading}
+            aria-label="Saisir votre message"
             className="flex-1 bg-transparent border-none outline-none resize-none p-1 text-sm text-gray-700 disabled:opacity-50"
-            placeholder={
-              mode === "tier" ? "Make Tier List..." : "Type a message to AI..."
-            }
+            placeholder={mode === "tier" ? "Make Tier List..." : "Type a message to AI..."}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
           />
         </div>
-
         <div className="flex flex-col justify-end">
           <button
             onClick={handleMessage}
             disabled={isLoading}
+            aria-label="Envoyer le message"
+            aria-disabled={isLoading}
             className={`border border-white/10 text-white px-4 py-3 rounded-xl font-medium transition-all ${
               isLoading ? "opacity-50 cursor-not-allowed bg-transparent" : "hover:bg-white/5"
             }`}
