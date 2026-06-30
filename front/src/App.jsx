@@ -8,7 +8,7 @@ import Register from "./pages/Register";
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 function App() {
@@ -24,7 +24,7 @@ function App() {
         <Route index element={<MainContent />} />
         <Route path="tier-list/:id" element={<TierContent />} />
       </Route>
-      <Route path="*" element={<Navigate to="/login" />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

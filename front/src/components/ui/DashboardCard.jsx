@@ -51,7 +51,7 @@ function DashboardCard({ tierFolderData, setTierFolder }) {
             <img
               src={cover_image || defaultNotebook}
               alt={title || "Tier list"}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+              className="w-full h-full  object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-transparent opacity-70" />
             <div className="absolute top-4 left-4 p-2 rounded-xl bg-white/90 backdrop-blur-md text-gray-700 shadow-sm">

@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
-import { useRef } from "react";
-import { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { X } from "lucide-react";
 
-function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
+function ChatPanel({ id, geminiResults, setGeminiResults, setListings, onCloseMobile }) {
   const [value, setValue] = useState("");
   const [chatData, setChatData] = useState([]);
   const [mode, setMode] = useState("tier");
@@ -120,32 +119,42 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
   }, [chatData, isLoading]);
 
   return (
-    <div className="relative w-92 h-full bg-[#3d3d3d] rounded-t-[32px] mr-2 overflow-hidden flex flex-col">
-      <div className="shrink-0 w-full h-16 bg-[#3d3d3d] text-white text-xl flex px-6 items-center justify-between shadow-xl z-10">
+    <div className="relative w-full lg:w-92 h-full bg-[#2c2c2c] lg:rounded-t-[32px] overflow-hidden flex flex-col">
+      <div className="shrink-0 w-full h-16 bg-[#2d2d2d] text-white text-[16px] flex px-6 items-center justify-between shadow-xl z-10">
         <span>AI CHAT</span>
-        <div className="flex bg-[#2d2d2d] p-1 rounded-xl text-xs font-medium">
-          <button
-            onClick={() => setMode("tier")}
-            aria-label="Mode Tier List"
-            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
-              mode === "tier"
-                ? "bg-[#ba6f6f] text-white shadow"
-                : "text-gray-400 hover:text-white cursor-pointer"
-            }`}
-          >
-            Tier List
-          </button>
-          <button
-            onClick={() => setMode("chat")}
-            aria-label="Mode Chat"
-            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
-              mode === "chat"
-                ? "bg-[#ffffff] text-black shadow"
-                : "text-gray-400 hover:text-white cursor-pointer"
-            }`}
-          >
-            Chat
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-[#2d2d2d] p-1 rounded-xl text-xs font-medium">
+            <button
+              onClick={() => setMode("tier")}
+              aria-label="Mode Tier List"
+              className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
+                mode === "tier"
+                  ? "bg-[#ba6f6f] text-white shadow"
+                  : "text-gray-400 hover:text-white cursor-pointer"
+              }`}
+            >
+              Tier List
+            </button>
+            <button
+              onClick={() => setMode("chat")}
+              aria-label="Mode Chat"
+              className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
+                mode === "chat"
+                  ? "bg-[#ffffff] text-black shadow"
+                  : "text-gray-400 hover:text-white cursor-pointer"
+              }`}
+            >
+              Chat
+            </button>
+          </div>
+          {onCloseMobile && (
+            <button 
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 ml-1"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -159,7 +168,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
               if (elem.role === "assistant") {
                 return (
                   <div key={index} className="flex justify-start">
-                    <div className="p-3 text-white bg-[#4d4c4c] rounded-2xl shadow-sm">
+                    <div className="p-3 text-white bg-[#4d4c4c] rounded-2xl shadow-sm text-sm">
                       {elem.content}
                     </div>
                   </div>
@@ -168,7 +177,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
                 return (
                   <div key={index} className="flex justify-end">
                     <div
-                      className="max-w-[70%] p-3 bg-white rounded-2xl shadow-sm"
+                      className="max-w-[85%] p-3 bg-white rounded-2xl shadow-sm text-sm"
                       style={{ width: "fit-content" }}
                     >
                       {elem.content}
@@ -190,10 +199,10 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
         </div>
       </div>
 
-      <div className="relative bottom-0 flex gap-2 left-0 w-full p-4 bg-gradient-to-t to-transparent">
+      <div className="relative bottom-0 flex gap-2 left-0 w-full p-4 bg-gradient-to-t to-transparent pb-8 lg:pb-4">
         <div className="flex items-end gap-4 w-full border border-black/5 bg-white p-2 rounded-2xl">
           <TextareaAutosize
-            maxRows={10}
+            maxRows={6}
             disabled={isLoading}
             aria-label="Saisir votre message"
             className="flex-1 bg-transparent border-none outline-none resize-none p-1 text-sm text-gray-700 disabled:opacity-50"
@@ -209,7 +218,7 @@ function ChatPanel({ id, geminiResults, setGeminiResults, setListings }) {
             disabled={isLoading}
             aria-label="Envoyer le message"
             aria-disabled={isLoading}
-            className={`border border-white/10 text-white px-4 py-3 rounded-xl font-medium transition-all ${
+            className={`border border-white/10 text-white px-4 py-3 rounded-xl font-medium transition-all text-sm h-[42px] flex items-center ${
               isLoading ? "opacity-50 cursor-not-allowed bg-transparent" : "hover:bg-white/5"
             }`}
           >

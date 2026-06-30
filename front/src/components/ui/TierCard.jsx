@@ -17,10 +17,10 @@ function TierCard({
   });
 
   const tierStyles = {
-    S: "bg-[#ff7f7f] text-[#733838] text-[28px] pt-[6px] font-bold",
-    A: "bg-[#ffbf7f] text-[#733838] text-[28px] pt-[6px] font-bold",
-    B: "bg-[#ffff7f] text-[#733838] text-[28px] pt-[6px] font-bold",
-    C: "bg-[#7fff7f] text-[#733838] text-[28px] pt-[6px] font-bold",
+    S: "bg-[#ff7f7f] text-[#733838] text-[24px] md:text-[28px] pt-[4px] md:pt-[6px] font-bold",
+    A: "bg-[#ffbf7f] text-[#733838] text-[24px] md:text-[28px] pt-[4px] md:pt-[6px] font-bold",
+    B: "bg-[#ffff7f] text-[#733838] text-[24px] md:text-[28px] pt-[4px] md:pt-[6px] font-bold",
+    C: "bg-[#7fff7f] text-[#733838] text-[24px] md:text-[28px] pt-[4px] md:pt-[6px] font-bold",
     default: "bg-gray-100 text-gray-600",
   };
 
@@ -63,10 +63,10 @@ function TierCard({
   return (
     <div className="w-full">
       <div className="rounded-[30px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.05)] overflow-hidden">
-        <div onClick={onToggle} className="group relative flex flex-col cursor-pointer p-5">
-          <div className="flex items-center gap-6 pr-24 pl-1">
+        <div onClick={onToggle} className="group relative flex flex-col cursor-pointer p-4 md:p-5">
+          <div className="flex items-center gap-4 md:gap-6 pr-14 md:pr-24 pl-1 h-24">
             <div className="flex-shrink-0">
-              <div className="rounded-2xl overflow-hidden bg-[#f5f5f5] w-24 h-24 filter shadow-sm">
+              <div className="rounded-2xl overflow-hidden bg-[#f5f5f5] w-20 h-20 md:w-24 md:h-24 filter shadow-sm">
                 <img
                   src={data.image_url || data.image}
                   alt={data.title || "Image du produit"}
@@ -74,33 +74,33 @@ function TierCard({
                 />
               </div>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-gray-400">
+            <div className="flex-1 min-w-0 flex flex-col justify-center h-full">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-gray-400 truncate">
                 <span>{data.condition_category || "New"}</span>
                 <span>•</span>
                 <span>{data.source_site}</span>
               </div>
-              <h3 className="text-gray-800 font-medium leading-snug line-clamp-2 mt-1 text-lg">
+              <h3 className="text-gray-800 font-medium leading-snug line-clamp-2 mt-0.5 text-sm md:text-lg">
                 {data.title}
               </h3>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-lg font-bold tracking-tight text-gray-900">
+              <div className="flex items-center gap-3 md:gap-4 mt-1 truncate">
+                <span className="text-base md:text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
                   {formattedPrice}
                 </span>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" aria-hidden="true" />
+                <div className="flex items-center gap-1 text-[11px] md:text-xs text-gray-500 whitespace-nowrap">
+                  <Star className="w-3 h-3 md:w-3.5 md:h-3.5 fill-amber-400 stroke-amber-400" aria-hidden="true" />
                   <span>{data.seller_rating || "0.0"}</span>
-                  <span>({data.seller_reviews_count})</span>
+                  <span className="hidden xs:inline">({data.seller_reviews_count})</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className={`absolute right-0 top-0 bottom-0 w-12 flex items-center justify-center text-4xl pb-2.5 border-l border-black/[0.04] ${currentTierStyle}`}>
+          <div className={`absolute right-0 top-0 bottom-0 w-10 md:w-12 flex items-center justify-center border-l border-black/[0.04] ${currentTierStyle}`}>
             {currentTier}
           </div>
 
-          <div className="absolute top-3 right-14 flex items-center gap-1.5 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          <div className="absolute top-3 right-12 md:right-14 flex items-center gap-1.5 opacity-100 lg:opacity-0 lg:translate-x-2 lg:group-hover:opacity-100 lg:group-hover:translate-x-0 transition-all duration-300">
             <button
               onClick={handleDeleteCard}
               aria-label="Supprimer ce produit"
@@ -120,29 +120,29 @@ function TierCard({
             </a>
           </div>
 
-          <div className={`grid overflow-hidden transition-all duration-300 ${isOpen ? "grid-rows-[1fr] opacity-100 mt-5 pt-5 border-t border-black/[0.05]" : "grid-rows-[0fr] opacity-0"}`}>
-            <div className="overflow-hidden pr-14 pl-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className={`grid overflow-hidden transition-all duration-300 ${isOpen ? "grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-black/[0.05]" : "grid-rows-[0fr] opacity-0"}`}>
+            <div className="overflow-hidden pr-10 md:pr-14 pl-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <div>
                   <span className="text-[11px] uppercase font-bold tracking-wider text-green-600">Pros</span>
-                  <ul className="mt-2 space-y-1.5">
+                  <ul className="mt-1.5 space-y-1">
                     {pros.map((pro, index) => (
-                      <li key={index} className="text-[13px] leading-relaxed text-gray-600">• {pro}</li>
+                      <li key={index} className="text-[12px] md:text-[13px] leading-relaxed text-gray-600 line-clamp-2">• {pro}</li>
                     ))}
                   </ul>
                 </div>
                 <div>
                   <span className="text-[11px] uppercase font-bold tracking-wider text-rose-500">Cons</span>
-                  <ul className="mt-2 space-y-1.5">
+                  <ul className="mt-1.5 space-y-1">
                     {cons.map((con, index) => (
-                      <li key={index} className="text-[13px] leading-relaxed text-gray-600">• {con}</li>
+                      <li key={index} className="text-[12px] md:text-[13px] leading-relaxed text-gray-600 line-clamp-2">• {con}</li>
                     ))}
                   </ul>
                 </div>
               </div>
-              <div className="mt-5 p-4 rounded-2xl bg-[#f6f6f7]">
+              <div className="mt-4 p-3 md:p-4 rounded-2xl bg-[#f6f6f7]">
                 <span className="text-[11px] uppercase font-bold tracking-wider text-purple-600">Verdict AI</span>
-                <p className="mt-1.5 text-[13px] font-normal italic text-gray-600 leading-relaxed">{data.ai_verdict}</p>
+                <p className="mt-1 text-[12px] md:text-[13px] font-normal italic text-gray-600 leading-relaxed line-clamp-4 md:line-clamp-none">{data.ai_verdict}</p>
               </div>
             </div>
           </div>

@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useEffect } from "react";
 import AddCardButton from "../ui/AddCardButton";
 import CreateFolderCard from "../ui/CreateFolderCard";
-import { Folder } from "lucide-react";
 
 function MainContent() {
   const [tierFolder, setTierFolder] = useState([]);
@@ -55,7 +54,7 @@ function MainContent() {
         <Header />
         <div className="flex-1 overflow-hidden">
           <div className="w-full h-full overflow-y-auto rounded-tl-[32px]">
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 pt-2 pr-3 gap-2 w-full content-start">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 pt-2 pr-3 gap-2 w-full content-start">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="aspect-square w-full bg-white/5 rounded-[30px] animate-pulse" />
               ))}
@@ -70,36 +69,28 @@ function MainContent() {
     <div className="flex flex-col h-screen w-full">
       <Header />
       <div className="flex-1 overflow-hidden">
-        <div className="w-full h-full overflow-y-auto rounded-tl-[32px]">
-          {tierFolder.length === 0 && !addFolder ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <Folder className="w-20 h-20 mb-4 opacity-20" />
-              <p className="text-lg font-medium text-white/60">Aucune tier list</p>
-              <p className="text-sm text-white/40">Créez votre première tier list</p>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 pt-2 pr-3 gap-2 w-full content-start">
-              <AddCardButton onClick={handleClick} addFolder={addFolder} />
-              {addFolder && (
-                <CreateFolderCard
-                  cardName={cardName}
-                  setCardName={setCardName}
-                  tierFolderData={"creating"}
-                  addFolder={addFolder}
-                  setAddFolder={setAddFolder}
-                  setTierFolder={setTierFolder}
-                />
-              )}
-              {tierFolder.map((elem, index) => (
-                <DashboardCard
-                  key={index}
-                  tierFolder={tierFolder}
-                  tierFolderData={elem}
-                  setTierFolder={setTierFolder}
-                />
-              ))}
-            </div>
-          )}
+        <div className="w-full h-full overflow-y-auto sm:rounded-tl-[30px] no-scrollbar">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 pt-2 px-3 sm:px-0 sm:pr-2 gap-2 w-full content-start rounded-t-[30px]">
+            <AddCardButton onClick={handleClick} addFolder={addFolder} />
+            {addFolder && (
+              <CreateFolderCard
+                cardName={cardName}
+                setCardName={setCardName}
+                tierFolderData={"creating"}
+                addFolder={addFolder}
+                setAddFolder={setAddFolder}
+                setTierFolder={setTierFolder}
+              />
+            )}
+            {tierFolder.map((elem, index) => (
+              <DashboardCard
+                key={index}
+                tierFolder={tierFolder}
+                tierFolderData={elem}
+                setTierFolder={setTierFolder}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

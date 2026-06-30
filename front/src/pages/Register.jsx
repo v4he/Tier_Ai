@@ -42,6 +42,13 @@ function Register() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+
+      window.postMessage({
+        type: 'LOGIN_FROM_PAGE',
+        token: data.token
+      }, '*');
+      console.log('LOGIN_FROM_PAGE signal sent');
+
       navigate("/");
     } catch (err) {
       setError(err.message);
