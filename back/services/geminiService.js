@@ -43,38 +43,46 @@ async function parseProductWithGemini(htmlContent) {
   const userContent = `ВОТ ТЕКСТ СТРАНИЦЫ ТОВАРА ДЛЯ АНАЛИЗА:\n${htmlContent}`;
 
   try {
-    const response = await ai.models.generateContent({
+    // Инициализируем чат-сессию. Она автоматически дожидается завершения вызовов Google Search (Tool Loops)
+    const chat = ai.chats.create({
       model: "gemini-2.5-flash",
-      contents: userContent,
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.0, 
-        maxOutputTokens: 4000, 
-        tools: [{ googleSearch: {} }], 
-      },
+        temperature: 0.0,
+        maxOutputTokens: 4000,
+        tools: [{ googleSearch: {} }]
+      }
     });
 
+    const response = await chat.sendMessage({ message: userContent });
+
     let rawText = "";
-    if (response && typeof response.text === "function") {
+
+    // Извлекаем финальный сгенерированный текст из ответа чата
+    if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      rawText = response.candidates[0].content.parts[0].text.trim();
+    } else if (typeof response.text === "function") {
       rawText = response.text().trim();
-    } else if (response && response.text) {
+    } else if (response.text) {
       rawText = response.text.trim();
     } else {
-      throw new Error("Не удалось прочитать свойство text из ответа Gemini API.");
+      console.error("[Gemini Raw Chat Response Error Dump]:", JSON.stringify(response, null, 2));
+      throw new Error("Не удалось найти текстовое содержимое в финальном ответе чата Gemini.");
     }
 
+    // Вырезаем JSON-структуру из Markdown разметки
     const startJson = rawText.indexOf("{");
     const endJson = rawText.lastIndexOf("}");
 
     if (startJson !== -1 && endJson !== -1) {
       rawText = rawText.substring(startJson, endJson + 1);
     } else {
-      throw new Error("ИИ не смог сформировать валидный JSON в текстовом ответе.");
+      throw new Error("ИИ не смог сформировать валидный JSON в тексте ответа.");
     }
 
     return JSON.parse(rawText);
   } catch (error) {
-    console.error("[Product Parser Error]: Ошибка парсинга карточки:", error);
+    console.error("[Product Parser Error]: Ошибка парсинга карточки через чат-сессию:", error);
     throw error;
   }
 }

@@ -4,14 +4,75 @@
   <meta charset="UTF-8">
   <title>Dossiers Tier</title>
   <style>
-    body { font-family: system-ui, sans-serif; padding: 16px; margin: 0; background: #f9fafb; }
-    h2 { font-size: 16px; color: #1f2937; margin-bottom: 12px; }
-    .folder { background: white; margin: 8px 0; padding: 14px; border-radius: 16px; cursor: pointer; border: 1px solid #e5e7eb; transition: 0.2s; font-weight: 500; }
-    .folder:hover { background: #f3f4f6; border-color: #cbd5e1; }
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 16px;
+      margin: 0;
+      background: #2b2b2b;
+      color: #ffffff;
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body::-webkit-scrollbar {
+      display: none;
+    }
+
+    h2 {
+      font-size: 16px;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .folder {
+      background: #3d3d3d;
+      margin: 8px 0;
+      padding: 14px;
+      border-radius: 16px;
+      cursor: pointer;
+      border: 1px solid #4d4d4d;
+      transition: 0.2s;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .folder:hover {
+      background: #4d4d4d;
+      border-color: #5d5d5d;
+    }
+
+    .folder-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #4d4d4d;
+      flex-shrink: 0;
+    }
+
+    .folder-title {
+      flex: 1;
+    }
+
+    .folder-count {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    #folderList {
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    #folderList::-webkit-scrollbar {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h2>Choisissez un dossier pour la tier list :</h2>
+  <h2>Choisissez un dossier :</h2>
   <div id="folderList">Chargement des dossiers...</div>
   <script src="tierFolders.js"></script>
 </body>

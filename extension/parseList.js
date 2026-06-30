@@ -65,6 +65,11 @@ async function loadSavedListings(folderId) {
     listings.forEach(item => {
       const card = document.createElement("div");
       card.className = "list-item-card";
+      
+      if (item.status === "processing") {
+        card.classList.add("adding");
+      }
+      
       const displayPrice = item.price ? `${Number(item.price).toLocaleString()} €` : "Prix non indiqué";
 
       card.innerHTML = `
@@ -72,6 +77,7 @@ async function loadSavedListings(folderId) {
         <div class="list-item-info">
           <div class="list-item-title" title="${item.title}">${item.title || "Sans titre"}</div>
           <div class="list-item-price">${displayPrice}</div>
+          ${item.status === "processing" ? '<div class="list-item-status">Traitement en cours...</div>' : ''}
         </div>
       `;
       container.appendChild(card);
@@ -248,6 +254,9 @@ document.getElementById('confirmBtn').addEventListener('click', async () => {
 
   innerStatus.textContent = 'Sauvegarde du produit...';
 
+  previewBlock.style.display = 'none';
+  toastEl.classList.remove('show');
+
   try {
     const response = await fetch('http://localhost:5000/api/parse', {
       method: 'POST',
@@ -271,13 +280,16 @@ document.getElementById('confirmBtn').addEventListener('click', async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    await response.json();
+    const data = await response.json();
     innerStatus.textContent = 'Ajouté avec succès !';
     
     await loadSavedListings(currentFolderId);
 
+    if (data.result && data.result.status === 'completed') {
+      await loadSavedListings(currentFolderId);
+    }
+
     setTimeout(() => {
-      previewBlock.style.display = 'none';
       innerStatus.textContent = '';
       scrapedData = null;
       selectedImageUrl = null;

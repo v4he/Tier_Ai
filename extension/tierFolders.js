@@ -9,7 +9,7 @@ async function loadFolders() {
       chrome.storage.local.remove(['currentFolderId']);
       folderList.innerHTML = `
         <div style="color: #ef4444; margin-bottom: 12px;">Veuillez vous connecter d'abord</div>
-        <button id="goToLoginBtn" style="background: #fff; color: #000; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
+        <button id="goToLoginBtn" style="background: #ba6f6f; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
           Se connecter sur le site
         </button>
       `;
@@ -30,7 +30,7 @@ async function loadFolders() {
         chrome.storage.local.remove(['authToken', 'currentFolderId']);
         folderList.innerHTML = `
           <div style="color: #ef4444; margin-bottom: 12px;">Session expirée, reconnectez-vous</div>
-          <button id="goToLoginBtn" style="background: #fff; color: #000; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
+          <button id="goToLoginBtn" style="background: #ba6f6f; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
             Se connecter
           </button>
         `;
@@ -46,19 +46,32 @@ async function loadFolders() {
     folderList.innerHTML = '';
     
     if (!folders || folders.length === 0) {
-      folderList.innerHTML = '<div style="color: #9ca3af; text-align: center;">Aucun dossier</div>';
+      folderList.innerHTML = '<div style="color: #9ca3af; text-align: center; padding: 20px;">Aucun dossier</div>';
       return;
     }
 
     folders.forEach(f => {
       const div = document.createElement('div');
       div.className = 'folder';
-      div.textContent = f.title;
+      
+      const thumb = document.createElement('img');
+      thumb.className = 'folder-thumb';
+      thumb.src = f.cover_image || 'https://placehold.co/40/3d3d3d/ffffff?text=?';
+      thumb.alt = f.title;
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'folder-title';
+      titleSpan.textContent = f.title;
+      
+      div.appendChild(thumb);
+      div.appendChild(titleSpan);
+      
       div.onclick = () => {
         chrome.storage.local.set({ currentFolderId: f.id }, () => {
           window.location.href = 'parseList.html';
         });
       };
+      
       folderList.appendChild(div);
     });
   } catch (err) {

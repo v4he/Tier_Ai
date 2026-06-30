@@ -165,6 +165,70 @@ app.get("/api/listings/:id",
   }
 );
 
+async function processProductInBackground(listingId, html, tierListId, imageUrl) {
+  try {
+    const $ = cheerio.load(html);
+    $(
+      'script, style, noscript, iframe, svg, header, footer, nav, aside, form, button, ' +
+      '.cookie, #cookie, [class*="cookie"], [class*="footer"], .footer, #footer, [class*="nav"]'
+    ).remove();
+
+    let cleanText = $.text();
+    cleanText = cleanText
+      .replace(/[\t\r]/g, " ")
+      .replace(/ +/g, " ")
+      .replace(/\n\s*\n+/g, "\n")
+      .trim();
+
+    const globalCutMarkers = [
+      "ces annonces peuvent vous", "voir plus d’annonces", "annonces google",
+      "publicité", "similar listings", "recommended for you", "похожие объявления",
+      "vous pourriez aussi aimer", "produits similaires"
+    ];
+
+    for (let marker of globalCutMarkers) {
+      const cutIndex = cleanText.toLowerCase().indexOf(marker);
+      if (cutIndex !== -1 && cutIndex > 400) {
+        cleanText = cleanText.substring(0, cutIndex);
+        break;
+      }
+    }
+
+    const groqData = await parseProductWithGemini(cleanText);
+
+    await pool.query(
+      `UPDATE listings 
+       SET title = $1, 
+           price = $2, 
+           condition_category = $3, 
+           seller_rating = $4, 
+           seller_reviews_count = $5, 
+           clean_description = $6,
+           status = $7
+       WHERE id = $8`,
+      [
+        groqData.title || "Sans titre",
+        groqData.price || null,
+        groqData.condition_category || "EXCELLENT",
+        groqData.seller_rating || null,
+        groqData.seller_reviews_count || null,
+        groqData.clean_description || "",
+        "completed",
+        listingId
+      ]
+    );
+
+    logger.info(`[Parser] Produit ${listingId} mis à jour avec succès`);
+
+  } catch (err) {
+    logger.error(`[Parser] Erreur lors du traitement du produit ${listingId}:`, err);
+    await pool.query(
+      `UPDATE listings SET status = $1, clean_description = $2 WHERE id = $3`,
+      ["error", "Erreur lors du traitement IA", listingId]
+    );
+  }
+}
+
 app.post("/api/parse",
   authenticate,
   validate(parseSchema),
@@ -187,74 +251,66 @@ app.post("/api/parse",
         });
       }
 
-      logger.info(`[Parser] Début du parsing pour l'URL: ${url}`);
-      const $ = cheerio.load(html);
-
-      $(
-        'script, style, noscript, iframe, svg, header, footer, nav, aside, form, button, ' +
-        '.cookie, #cookie, [class*="cookie"], [class*="footer"], .footer, #footer, [class*="nav"]'
-      ).remove();
-
-      let cleanText = $.text();
-      cleanText = cleanText
-        .replace(/[\t\r]/g, " ")
-        .replace(/ +/g, " ")
-        .replace(/\n\s*\n+/g, "\n")
-        .trim();
-
-      const globalCutMarkers = [
-        "ces annonces peuvent vous", "voir plus d’annonces", "annonces google",
-        "publicité", "similar listings", "recommended for you", "похожие объявления",
-        "vous pourriez aussi aimer", "produits similaires"
-      ];
-
-      for (let marker of globalCutMarkers) {
-        const cutIndex = cleanText.toLowerCase().indexOf(marker);
-        if (cutIndex !== -1 && cutIndex > 400) {
-          cleanText = cleanText.substring(0, cutIndex);
-          break;
-        }
-      }
-
-      logger.info(`[Parser] Nettoyage terminé. Texte réduit de ${html.length} à ${cleanText.length} caractères.`);
-
-      const groqData = await parseProductWithGemini(cleanText);
-      logger.info(`[Parser] Réponse IA reçue: ${groqData.title}`);
-
-      const urlObj = new URL(url);
-      const sourceSite = urlObj.hostname;
+      logger.info(`[Parser] Création de l\'entrée processing pour l'URL: ${url}`);
 
       const result = await pool.query(
-        `INSERT INTO listings (title, price, image_url, condition_category, seller_rating, seller_reviews_count, clean_description, url, source_site)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+        `INSERT INTO listings (title, price, image_url, condition_category, seller_rating, seller_reviews_count, clean_description, url, source_site, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
         [
-          groqData.title || "Sans titre",
-          groqData.price || null,
+          "Traitement en cours...",
+          null,
           imageUrl,
-          groqData.condition_category || "EXCELLENT",
-          groqData.seller_rating || null,
-          groqData.seller_reviews_count || null,
-          groqData.clean_description || "",
+          "EXCELLENT",
+          null,
+          null,
+          "",
           url,
-          sourceSite,
+          new URL(url).hostname,
+          "processing"
         ]
       );
 
+      const listingId = result.rows[0].id;
+
       await pool.query(
         `INSERT INTO tier_list_items (tier_list_id, listing_id) VALUES ($1, $2)`,
-        [tierListId, result.rows[0].id]
+        [tierListId, listingId]
       );
 
-      const finalResult = {
-        ...groqData,
-        url: url,
-        image: imageUrl,
-      };
+      res.json({
+        result: {
+          id: listingId,
+          status: "processing",
+          title: "Traitement en cours...",
+          image: imageUrl,
+          url: url
+        }
+      });
 
-      logger.info(`[Parser] Produit ajouté avec succès: ${groqData.title}`);
-      res.json({ result: finalResult });
+      processProductInBackground(listingId, html, tierListId, imageUrl);
+
     } catch (err) {
       next(err);
+    }
+  }
+);
+
+app.get("/api/listing-status/:id",
+  authenticate,
+  async (req, res, next) => {
+    try {
+      const result = await pool.query(
+        "SELECT status, title, price, condition_category, seller_rating, seller_reviews_count, clean_description FROM listings WHERE id = $1",
+        [req.params.id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Produit non trouvé" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      next(error);
     }
   }
 );
