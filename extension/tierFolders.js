@@ -2,12 +2,51 @@ const folderList = document.getElementById('folderList');
 
 async function loadFolders() {
   try {
-    const res = await fetch('http://localhost:5000/api/tierFolders');
+    const storage = await chrome.storage.local.get(['authToken']);
+    const token = storage.authToken;
+
+    if (!token) {
+      chrome.storage.local.remove(['currentFolderId']);
+      folderList.innerHTML = `
+        <div style="color: #ef4444; margin-bottom: 12px;">Veuillez vous connecter d'abord</div>
+        <button id="goToLoginBtn" style="background: #fff; color: #000; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
+          Se connecter sur le site
+        </button>
+      `;
+      document.getElementById('goToLoginBtn').onclick = () => {
+        chrome.tabs.create({ url: 'http://localhost:5173/login' });
+      };
+      return;
+    }
+
+    const res = await fetch('http://localhost:5000/api/tierFolders', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        chrome.storage.local.remove(['authToken', 'currentFolderId']);
+        folderList.innerHTML = `
+          <div style="color: #ef4444; margin-bottom: 12px;">Session expirée, reconnectez-vous</div>
+          <button id="goToLoginBtn" style="background: #fff; color: #000; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
+            Se connecter
+          </button>
+        `;
+        document.getElementById('goToLoginBtn').onclick = () => {
+          chrome.tabs.create({ url: 'http://localhost:5173/login' });
+        };
+        return;
+      }
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
     const folders = await res.json();
     folderList.innerHTML = '';
     
     if (!folders || folders.length === 0) {
-      folderList.innerHTML = '<div style="color: #9ca3af;">u vas net papok</div>';
+      folderList.innerHTML = '<div style="color: #9ca3af; text-align: center;">Aucun dossier</div>';
       return;
     }
 
@@ -16,7 +55,6 @@ async function loadFolders() {
       div.className = 'folder';
       div.textContent = f.title;
       div.onclick = () => {
-
         chrome.storage.local.set({ currentFolderId: f.id }, () => {
           window.location.href = 'parseList.html';
         });
@@ -24,8 +62,34 @@ async function loadFolders() {
       folderList.appendChild(div);
     });
   } catch (err) {
-    folderList.innerHTML = '<div style="color: #ef4444;">oshibka podklyucheniya k serveru</div>';
+    console.error('Error loading folders:', err);
+    folderList.innerHTML = '<div style="color: #ef4444; text-align: center;">Erreur de connexion au serveur</div>';
   }
 }
 
+function logToPage(text, data = null) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs && tabs[0] && tabs[0].id) {
+      chrome.tabs.sendMessage(tabs[0].id, { type: "POPUP_LOG", text, data }, () => {
+        if (chrome.runtime.lastError) {}
+      });
+    }
+  });
+}
+
 loadFolders();
+logToPage("Popup opened (tierFolders.js) and loadFolders() called");
+
+chrome.runtime.onMessage.addListener((message) => {
+  logToPage(`tierFolders.js caught internal message: ${message.type}`);
+  
+  if (message.type === 'EXTENSION_LOGOUT_SUCCESS') {
+    logToPage("Logout detected, reloading folders");
+    loadFolders(); 
+  }
+
+  if (message.type === 'EXTENSION_LOGIN_SUCCESS') {
+    logToPage("Login detected, reloading folders");
+    loadFolders();
+  }
+});

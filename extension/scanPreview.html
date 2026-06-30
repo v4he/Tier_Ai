@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Scan Preview</title>
+  <title>Aperçu du scan</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { background: #f9fafb; padding: 20px; width: 100%; }
@@ -22,15 +22,15 @@
 <body>
 
 <div class="product-card">
-  <div class="preview-title" id="productTitle">Загрузка данных...</div>
+  <div class="preview-title" id="productTitle">Chargement des données...</div>
   <div class="preview-price" id="productPrice"></div>
 
-  <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #334155;">Выбери фото:</div>
+  <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #334155;">Choisissez une photo:</div>
   <div id="imageGrid" class="image-grid"></div>
 
   <div class="action-buttons">
-    <button id="confirmBtn" class="btn-confirm">add</button>
-    <button id="cancelBtn" class="btn-cancel">otemena</button>
+    <button id="confirmBtn" class="btn-confirm">Ajouter</button>
+    <button id="cancelBtn" class="btn-cancel">Annuler</button>
   </div>
   <div id="statusMsg" class="status"></div>
 </div>
@@ -47,8 +47,8 @@
   const statusMsg = document.getElementById('statusMsg');
 
   function extractBasicInfo(text) {
-    let title = "tovar iz skanera";
-    let price = "cena ne ukazana";
+    let title = "Produit scanné";
+    let price = "Prix non indiqué";
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     
     if (lines.length > 0) title = lines[0].slice(0, 70);
@@ -67,20 +67,20 @@
     chrome.storage.local.get(['scrapedData'], (res) => {
       const data = res.scrapedData;
       if (!data) {
-        statusMsg.textContent = "net dannix";
+        statusMsg.textContent = "Aucune donnée";
         return;
       }
 
       currentScrapedData = data;
       const { title, price } = extractBasicInfo(data.text);
       productTitleEl.textContent = title;
-      productPriceEl.innerHTML = `${price} <span>(naydeno na stranice)</span>`;
+      productPriceEl.innerHTML = `${price} <span>(trouvé sur la page)</span>`;
 
       const images = data.imageCandidates || [];
       imageGridEl.innerHTML = "";
 
       if (images.length === 0) {
-        imageGridEl.innerHTML = '<div style="grid-column: span 3; color: #94a3b8;">foto ne naydeni</div>';
+        imageGridEl.innerHTML = '<div style="grid-column: span 3; color: #94a3b8;">Aucune photo trouvée</div>';
         return;
       }
 
@@ -108,7 +108,7 @@
   async function confirmAndSend() {
     if (!currentScrapedData || !currentSelectedImageUrl) return;
     
-    statusMsg.textContent = "otpravka na server";
+    statusMsg.textContent = "Envoi au serveur...";
     
     try {
       const folderRes = await chrome.storage.local.get(['currentFolderId']);
@@ -126,10 +126,10 @@
       });
 
       const result = await response.json();
-      statusMsg.textContent = "uspeshno dobavleno";
+      statusMsg.textContent = "Ajouté avec succès";
       setTimeout(() => window.close(), 800);
     } catch (err) {
-      statusMsg.textContent = "oshibka seti " + err.message;
+      statusMsg.textContent = "Erreur réseau: " + err.message;
     }
   }
 
